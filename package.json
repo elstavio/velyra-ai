@@ -1,0 +1,33 @@
+{
+  "name": "velyra-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Velyra AI — plateforme SaaS (essais gratuits, paiements par région, wallet, sécurité, administration, module TikTok)",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "build:server": "tsc -p tsconfig.json",
+    "build:web": "node scripts/build-web.mjs",
+    "build": "npm run build:server && npm run build:web",
+    "start": "node dist/server/index.js",
+    "dev": "npm run build && node --env-file-if-exists=.env dist/server/index.js",
+    "test": "npm run build:server && node --test --test-concurrency=1 dist/test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "security:audit": "node scripts/security-audit.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.0",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.25.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

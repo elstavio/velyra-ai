@@ -1,0 +1,17 @@
+# Démarrage local complet : docker compose up --build   puis http://localhost:3000
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: velyra, POSTGRES_PASSWORD: velyra, POSTGRES_DB: velyra }
+    volumes: [pgdata:/var/lib/postgresql/data]
+  app:
+    build: .
+    depends_on: [db]
+    ports: ["3000:3000"]
+    environment:
+      NODE_ENV: development          # mode démonstration (paiements simulés, codes dans les journaux)
+      PORT: 3000
+      DATABASE_URL: postgres://velyra:velyra@db:5432/velyra
+      ADMIN_EMAIL: admin@velyra.local
+      ADMIN_INITIAL_PASSWORD: "Changez-Moi-Avant-Usage-2026!"
+volumes: { pgdata: {} }

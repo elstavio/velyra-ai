@@ -1,0 +1,8 @@
+# Frontend seul sur Netlify (le backend reste sur Render). Définir API_BASE = URL du backend dans Netlify > Environment variables.
+[build]
+  command = "npm install --no-audit --no-fund && npm run build:web"
+  publish = "web/dist"
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

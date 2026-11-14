@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: velyra-api
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev --no-audit --no-fund && npm run build
+    startCommand: node dist/server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: TRUST_PROXY_HOPS, value: "1" }
+      - { key: APP_URL, sync: false }
+      - { key: DATABASE_URL, sync: false }
+      - { key: ENCRYPTION_KEY, sync: false }
+      - { key: ADMIN_EMAIL, sync: false }
+      - { key: ADMIN_INITIAL_PASSWORD, sync: false }
+      - { key: CINETPAY_APIKEY, sync: false }
+      - { key: CINETPAY_SITE_ID, sync: false }
+      - { key: CINETPAY_SECRET_KEY, sync: false }
+      - { key: CINETPAY_TRANSFER_PASSWORD, sync: false }
+      - { key: RESEND_API_KEY, sync: false }
+      - { key: EMAIL_PROVIDER, value: resend }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: AI_DEFAULT_PROVIDER, value: openai }
+      - { key: OPENAI_API_KEY, sync: false }
+      - { key: OPENAI_MODEL, value: gpt-6.1-sol }
+      - { key: SYSTEM_AGENT_PROVIDER, value: openai }
+      - { key: SYSTEM_AGENT_MODEL, value: gpt-6-luna }
+      - { key: CRON_SECRET, sync: false }
+      - { key: STRIPE_SECRET_KEY, sync: false }
+      - { key: STRIPE_WEBHOOK_SECRET, sync: false }
+      - { key: APPLE_CLIENT_ID, sync: false }
+      - { key: TIKTOK_CLIENT_KEY, sync: false }
+      - { key: TIKTOK_CLIENT_SECRET, sync: false }
+      - { key: YOUTUBE_CLIENT_ID, sync: false }
+      - { key: YOUTUBE_CLIENT_SECRET, sync: false }
+      - { key: META_APP_ID, sync: false }
+      - { key: META_APP_SECRET, sync: false }
