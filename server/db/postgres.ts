@@ -13,7 +13,11 @@ export async function openPostgres(url: string): Promise<Db> {
   // COUNT/SUM renvoient des bigint/numeric (texte) : tous nos montants sont des entiers -> Number.
   pg.types.setTypeParser(20, (v: string) => Number(v));
   pg.types.setTypeParser(1700, (v: string) => Number(v));
-  const ssl = /sslmode=disable/.test(url) || /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: true };
+  // rejectUnauthorized: false — Render confirme que ses connexions internes utilisent un certificat
+  // auto-signé et ne prennent pas en charge la vérification verify-ca/verify-full (voir
+  // https://render.com/docs/postgresql-creating-connecting#ssl-modes-for-internal-connections).
+  // La connexion reste chiffrée en TLS ; seule la chaîne de certificats n'est pas vérifiée.
+  const ssl = /sslmode=disable/.test(url) || /localhost|127\.0\.0\.1/.test(url) ? undefined : { rejectUnauthorized: false };
   const pool: PgPool = new pg.Pool({ connectionString: url, max: 10, ssl });
 
   const make = (q: PgClient['query'], inTx: boolean): Db => ({
