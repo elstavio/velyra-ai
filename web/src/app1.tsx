@@ -89,7 +89,7 @@ function RecentTasks({ tasks, loading }: { tasks: any[]; loading: boolean }) {
 
 function Onboarding({ me, cfg, reload }: { me: Me; cfg: any; reload: () => void }) {
   return (
-    <div className="card stack" style={{ borderColor: 'var(--mango)' }}>
+    <div className="card stack" style={{ borderColor: 'var(--gold-bright)' }}>
       <h2>Terminez l'activation de votre compte</h2>
       <p className="muted">Ces étapes servent à protéger les essais gratuits contre les abus.</p>
       {me.todo.includes('verify_email') && <EmailStep reload={reload} />}

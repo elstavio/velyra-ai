@@ -75,7 +75,7 @@ export function Finance() {
 /* ------------------------------------------------------------------ Fiche utilisateur 360° */
 export function UserSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const o = useAsync(() => api(`/api/admin/users/${id}/overview`, A), [id]); const d: any = o.data;
-  return (<div className="card" style={{ borderColor: 'var(--accent)' }}>
+  return (<div className="card" style={{ borderColor: 'var(--gold-bright)' }}>
     <div className="row between"><h3 style={{ margin: 0 }}>Fiche utilisateur</h3><button className="btn sm" onClick={onClose}>Fermer</button></div>
     {o.loading ? <Loading /> : !d ? <Err error={o.error} /> : (<div className="stack">
       <p style={{ margin: 0 }}><b>{d.user.email}</b> · {d.user.country ?? '—'} · <StatusChip s={d.user.status} /> · email {d.user.email_verified ? 'confirmé' : 'non confirmé'} · téléphone {d.user.phone_verified ? 'confirmé' : 'non confirmé'} · essais utilisés {d.user.trials_used} · inscrit {fmtDate(d.user.created_at)} · {d.tasks} tâche(s) sur 30 j · <b>{fmtNum(d.tokens.balance)} jetons</b></p>

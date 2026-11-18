@@ -163,7 +163,7 @@ function ReviewModal({ post, statement, onClose, onDone }: { post: any; statemen
         <h3 style={{ marginTop: 0 }}>Relire avant de publier</h3>
         <p className="tiny">Vers : <b>{post.label}</b>{post.accountName ? ` · ${post.accountName}` : ''}{post.recipient ? ` · destinataire ${post.recipient}` : ''}</p>
         <p style={{ margin: '4px 0' }}><b>Voici exactement ce qui sera publié :</b></p>
-        <pre data-testid="exact-content" style={{ whiteSpace: 'pre-wrap', font: 'inherit', background: 'var(--bg-soft, #f2f5f9)', padding: 12, borderRadius: 8, margin: 0 }}>{post.body}</pre>
+        <pre data-testid="exact-content" style={{ whiteSpace: 'pre-wrap', font: 'inherit', background: 'var(--surface-2)', padding: 12, borderRadius: 8, margin: 0 }}>{post.body}</pre>
         {post.link && <p className="tiny">Lien : {post.link}</p>}{post.imageUrl && <p className="tiny">Image : {post.imageUrl}</p>}
         {res ? (<><Alert kind="ok">{res.message ?? 'Publié.'}</Alert><button className="btn primary" onClick={onDone}>Fermer</button></>) : (<>
           <label className="row" style={{ alignItems: 'flex-start', gap: 8, marginTop: 12 }}><input type="checkbox" checked={c1} onChange={(e) => setC1(e.target.checked)} /><span>1. J'autorise la publication de ce contenu.</span></label>
