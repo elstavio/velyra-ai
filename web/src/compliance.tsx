@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert } from './ui';
+import { Alert, rovingTabsKeyDown } from './ui';
 
 /* ------------------------------------------------------------------------------------------------
  * Centre de conformité, de transparence et de protection des utilisateurs.
@@ -32,12 +32,13 @@ export function ComplianceCenter() {
     <div className="wrap" style={{ maxWidth: 820, paddingTop: 24, paddingBottom: 60 }}>
       <h1>Centre de conformité, de transparence et de protection des utilisateurs</h1>
       <p className="muted">Chaque page ci-dessous décrit ce que Velyra AI fait réellement — pas ce qu'un site type ferait en général. Quand un point dépend encore d'une décision de l'éditeur (raison sociale, délai de remboursement exact), c'est marqué « à compléter » plutôt que présenté comme déjà en place.</p>
-      <div className="tabs" role="tablist" style={{ marginTop: 18 }}>
+      <div className="tabs" role="tablist" aria-label="Sections du centre de conformité" style={{ marginTop: 18 }}>
         {SECTIONS.map(([k, l]) => (
-          <a key={k} href="#/conformite" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={(e) => { e.preventDefault(); setTab(k); }}>{l}</a>
+          <a key={k} id={`compliance-tab-${k}`} href="#/conformite" role="tab" aria-selected={tab === k} aria-controls="compliance-panel" tabIndex={tab === k ? 0 : -1} className={tab === k ? 'on' : ''} onClick={(e) => { e.preventDefault(); setTab(k); }} onKeyDown={rovingTabsKeyDown}>{l}</a>
         ))}
       </div>
 
+      <div role="tabpanel" id="compliance-panel" aria-labelledby={`compliance-tab-${tab}`} tabIndex={0}>
       {tab === 'mentions' && (
         <div className="stack">
           <h2>Mentions légales</h2>
@@ -169,6 +170,7 @@ export function ComplianceCenter() {
           <p className="muted">La police Inter (et Space Grotesk pour les titres) est chargée depuis Google Fonts, sous licence libre (SIL Open Font License), dans les conditions d'usage prévues pour le web. Aucune image, photo ou illustration de banque d'images n'est utilisée dans l'application : l'interface est dessinée en CSS, pas en images importées.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

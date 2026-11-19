@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, download, tokens } from './api';
-import { Alert, Bars, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, fmtNum, go, useAction, useAsync } from './ui';
+import { Alert, Bars, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, fmtNum, go, rovingTabsKeyDown, useAction, useAsync } from './ui';
 import type { Me } from './app1';
 
 /* ------------------------------------------------------------------ Workflows */
@@ -68,8 +68,8 @@ export function TikTok({ me }: { me: Me }) {
       <form className="card row" onSubmit={(e) => { e.preventDefault(); a.run(async () => { const r = await api('/api/tiktok/accounts', { body: { handle, country: me.user.country ?? undefined, category: cat || undefined } }); setHandle(''); setSel(r.id); acc.reload(); }); }}>
         <input className="grow" aria-label="Identifiant TikTok" placeholder="@moncompte" value={handle} onChange={(e) => setHandle(e.target.value)} required /><input className="grow" aria-label="Catégorie" placeholder="Catégorie (mode, cuisine…)" value={cat} onChange={(e) => setCat(e.target.value)} /><button className="btn primary" disabled={a.busy}>Suivre ce compte</button></form>
       <Err error={a.error || acc.error} />
-      {list.length > 0 && <div className="tabs" role="tablist">{list.map((x: any) => <a key={x.id} href="#/app/tiktok" role="tab" aria-selected={sel === x.id} className={sel === x.id ? 'on' : ''} onClick={(e) => { e.preventDefault(); setSel(x.id); }}>@{x.handle}</a>)}</div>}
-      {sel && <TikTokAccount key={sel} id={sel} me={me} onDelete={() => { setSel(null); acc.reload(); }} />}
+      {list.length > 0 && <div className="tabs" role="tablist" aria-label="Comptes TikTok suivis">{list.map((x: any) => <a key={x.id} id={`tiktok-tab-${x.id}`} href="#/app/tiktok" role="tab" aria-selected={sel === x.id} aria-controls="tiktok-panel" tabIndex={sel === x.id ? 0 : -1} className={sel === x.id ? 'on' : ''} onClick={(e) => { e.preventDefault(); setSel(x.id); }} onKeyDown={rovingTabsKeyDown}>@{x.handle}</a>)}</div>}
+      {sel && <div role="tabpanel" id="tiktok-panel" aria-labelledby={`tiktok-tab-${sel}`} tabIndex={0}><TikTokAccount key={sel} id={sel} me={me} onDelete={() => { setSel(null); acc.reload(); }} /></div>}
     </div>
   );
 }

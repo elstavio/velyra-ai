@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { api, download, tokens } from './api';
 import { Controls, Finance, SocialAdmin, TokensAdmin, UserSheet } from './admin2';
-import { Alert, Bars, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, go, useAction, useAsync } from './ui';
+import { Alert, Bars, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, go, rovingTabsKeyDown, useAction, useAsync } from './ui';
 import { authenticatePasskey, registerPasskey, webauthnSupported } from './webauthn';
 
 /* ------------------------------------------------------------------ Connexion en plusieurs étapes (§9) */
@@ -50,7 +50,7 @@ export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => v
   return (
     <div className="wrap fadein" style={{ paddingTop: 18, paddingBottom: 60 }}>
       <div className="row between"><h1 className="h1-page">Administration</h1><div className="row"><span className="tiny">{(me.data as any)?.email}</span><button className="btn sm" onClick={async () => { await api('/api/admin/auth/logout', { method: 'POST', body: {}, admin: true }).catch(() => undefined); tokens.setAdmin(null); onLogout(); go('/admin/connexion'); }}>Déconnexion</button></div></div>
-      <nav className="tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={tab === k ? 'on' : ''}>{l}</a>)}</nav>
+      <nav className="tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined}>{l}</a>)}</nav>
       {tab === '' && <Overview />}{tab === 'utilisateurs' && <Users />}{tab === 'paiements' && <Payments />}{tab === 'portefeuille' && <Wallet />}{tab === 'fraude' && <Fraud />}
       {tab === 'securite' && <Security />}{tab === 'controles' && <Controls />}{tab === 'finances' && <Finance />}{tab === 'jetons' && <TokensAdmin />}{tab === 'reseaux' && <SocialAdmin />}{tab === 'agents' && <Agents />}{tab === 'ia' && <Insights />}{tab === 'marketplace' && <Moderation />}{tab === 'offres' && <Plans />}{tab === 'systeme' && <System />}
     </div>
@@ -134,7 +134,8 @@ function Security() {
     <div className="card row"><button className="btn" onClick={() => a.run(async () => setChain(await api('/api/admin/security/verify-chain', A)))}>Vérifier l'intégrité du journal</button><button className="btn" onClick={() => download('/api/admin/security/evidence', 'preuves-securite.json', true)}>Exporter les preuves (JSON)</button>
       {chain && <Alert kind={chain.ok ? 'ok' : 'err'}>{chain.ok ? `Journal intact (${chain.checked ?? ''} événements chaînés).` : `Anomalie détectée : ${JSON.stringify(chain).slice(0, 200)}`}</Alert>}<Err error={a.error} /></div>
     {(o.pendingPayouts ?? []).length > 0 && <Alert kind="warn">{o.pendingPayouts.length} retrait(s) en attente de votre confirmation par email — aucun fonds ne sortira tant que vous n'aurez pas cliqué le lien reçu.</Alert>}
-    <div className="tabs">{[['events', 'Événements'], ['intrusion', 'Piège & intrusions'], ['retraits', 'Retraits à confirmer'], ['passkeys', 'Clés de sécurité'], ['blocks', 'IP bloquées'], ['sessions', 'Sessions'], ['logins', 'Connexions']].map(([k, l]) => <a key={k} href="#/admin/securite" className={view === k ? 'on' : ''} onClick={(e) => { e.preventDefault(); setView(k); }}>{l}</a>)}</div>
+    <div className="tabs" role="tablist" aria-label="Sections de sécurité">{[['events', 'Événements'], ['intrusion', 'Piège & intrusions'], ['retraits', 'Retraits à confirmer'], ['passkeys', 'Clés de sécurité'], ['blocks', 'IP bloquées'], ['sessions', 'Sessions'], ['logins', 'Connexions']].map(([k, l]) => <a key={k} id={`security-tab-${k}`} href="#/admin/securite" role="tab" aria-selected={view === k} aria-controls="security-panel" tabIndex={view === k ? 0 : -1} className={view === k ? 'on' : ''} onClick={(e) => { e.preventDefault(); setView(k); }} onKeyDown={rovingTabsKeyDown}>{l}</a>)}</div>
+    <div role="tabpanel" id="security-panel" aria-labelledby={`security-tab-${view}`} tabIndex={0}>
     {view === 'events' && <div className="card"><Table head={['Date', 'Type', 'Gravité', 'IP']} rows={((ev.data as any)?.events ?? []).map((e: any) => [fmtDate(e.created_at), e.type, <StatusChip key="s" s={e.severity} />, e.ip ?? '—'])} /></div>}
     {view === 'intrusion' && <div className="stack">
       <Alert>Routes-pièges invisibles dans la vraie application : toute requête dessus déclenche un blocage immédiat de l'IP et une alerte critique. Les informations captées sont purgées automatiquement après {o.retentionDays ?? 10} jours (la preuve d'incident, elle, reste dans le journal chaîné ci-dessus).</Alert>
@@ -150,6 +151,7 @@ function Security() {
       <Table head={['IP', 'Motif', 'Depuis', 'Expire', '']} rows={((bl.data as any)?.blocks ?? []).map((b: any) => [b.ip, b.reason, fmtDate(b.created_at), b.permanent ? 'jamais' : fmtDate(b.expires_at), <button key="u" className="btn sm" onClick={() => a.run(async () => { await api('/api/admin/security/blocks/remove', { body: { ip: b.ip }, admin: true }); bl.reload(); })}>Débloquer</button>])} empty="Aucune IP bloquée." /></div>}
     {view === 'sessions' && <div className="card"><Table head={['Email', 'IP', 'Type', 'Dernière activité', '']} rows={((ses.data as any)?.sessions ?? []).map((s: any) => [s.email, s.ip, s.is_admin ? 'admin' : 'utilisateur', fmtDate(s.last_seen_at), <button key="r" className="btn sm danger" onClick={() => a.run(async () => { await api(`/api/admin/sessions/${s.id}/revoke`, { method: 'POST', body: {}, admin: true }); ses.reload(); })}>Révoquer</button>])} /></div>}
     {view === 'logins' && <div className="card"><Table head={['Date', 'Email', 'IP', 'Résultat', 'Détail']} rows={((lg.data as any)?.logins ?? []).map((l: any) => [fmtDate(l.created_at), l.email ?? '—', l.ip, l.success ? 'réussie' : 'échec', l.reason ?? ''])} /></div>}
+    </div>
   </div>);
 }
 

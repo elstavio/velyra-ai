@@ -17,11 +17,11 @@ function Shell({ path, children, onLogout }: { path: string; children: React.Rea
   return (<>
     <a className="sr" href="#contenu">Aller au contenu</a>
     <header className="top"><div className="wrap"><a className="brand" href={onLogout ? '#/app' : '#/'}><i aria-hidden="true" />Velyra AI</a>
-      {onLogout ? <><nav aria-label="Principal">{NAV.map(([p, l]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''}>{l}</a>)}</nav><span style={{ flex: 1 }} /></> : <span style={{ flex: 1 }} />}
+      {onLogout ? <><nav aria-label="Principal">{NAV.map(([p, l]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}>{l}</a>)}</nav><span style={{ flex: 1 }} /></> : <span style={{ flex: 1 }} />}
       {onLogout ? <button className="btn sm" onClick={onLogout}>Déconnexion</button> : <a className="btn sm" href="#/connexion">Connexion</a>}</div></header>
     <main className="page" id="contenu"><TransparencyBanner />{children}</main>
     <footer className="wrap tiny" style={{ paddingBottom: onLogout ? 90 : 24 }}><a href="#/confidentialite">Confidentialité</a> · <a href="#/conditions">Conditions d'utilisation</a> · <a href="#/conformite">Centre de conformité</a></footer>
-    {onLogout && <nav className="tabbar" aria-label="Navigation mobile">{NAV.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>}
+    {onLogout && <nav className="tabbar" aria-label="Navigation mobile">{NAV.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>}
   </>);
 }
 

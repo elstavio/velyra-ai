@@ -1,4 +1,4 @@
-import { Component, useEffect, useState, type CSSProperties, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useState, type CSSProperties, type ErrorInfo, type KeyboardEvent, type ReactNode } from 'react';
 import { ApiError } from './api';
 
 /**
@@ -34,6 +34,29 @@ export function useHash() {
   return h;
 }
 export const go = (p: string) => { location.hash = p; };
+
+/**
+ * I5 : navigation au clavier d'un groupe d'onglets ARIA (flèches/Home/End), motif « roving tabindex »
+ * recommandé par WAI-ARIA Authoring Practices. À poser en onKeyDown sur chaque élément role="tab" :
+ * les flèches déplacent le focus vers l'onglet voisin (Home/End vers le premier/dernier) et activent sa
+ * sélection existante via .click() — aucune logique de sélection dupliquée ici, uniquement la navigation.
+ */
+export function rovingTabsKeyDown(e: KeyboardEvent<HTMLElement>) {
+  const keys = ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'];
+  if (!keys.includes(e.key)) return;
+  e.preventDefault();
+  const el = e.currentTarget;
+  const siblings = Array.from(el.parentElement?.children ?? []) as HTMLElement[];
+  const i = siblings.indexOf(el);
+  if (i < 0) return;
+  let j = i;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % siblings.length;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + siblings.length) % siblings.length;
+  else if (e.key === 'Home') j = 0;
+  else if (e.key === 'End') j = siblings.length - 1;
+  siblings[j]?.focus();
+  siblings[j]?.click();
+}
 
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
