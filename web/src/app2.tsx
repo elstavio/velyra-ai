@@ -11,7 +11,7 @@ export function Workflows() {
   const agents = (ag.data as any)?.agents ?? []; const list = (w.data as any)?.workflows ?? [];
   const upd = (i: number, p: any) => setSteps((s) => s.map((x, j) => (j === i ? { ...x, ...p } : x)));
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Workflows</h1>
+    <div className="stack fadein"><h1 className="h1-page">Workflows</h1>
       <p className="muted">Enchaînez jusqu'à 8 étapes. Utilisez <code>{'{{input}}'}</code> pour votre texte de départ et <code>{'{{previous}}'}</code> pour le résultat de l'étape précédente. Chaque étape consomme une tâche.</p>
       <form className="card" onSubmit={(e) => { e.preventDefault(); a.run(async () => { await api('/api/workflows', { body: { name, steps } }); setName(''); setSteps([{ type: 'prompt', prompt: '' }]); w.reload(); }); }}>
         <Field label="Nom du workflow"><input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={60} /></Field>
@@ -38,7 +38,7 @@ export function Marketplace() {
   const [f, setF] = useState({ kind: 'agent', refId: '', title: '', description: '' }); const a = useAction(); const i = useAction();
   const items = ((f.kind === 'agent' ? (ag.data as any)?.agents : (wf.data as any)?.workflows) ?? []) as any[];
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Marketplace</h1>
+    <div className="stack fadein"><h1 className="h1-page">Marketplace</h1>
       <p className="muted">Agents et workflows partagés par la communauté. Chaque publication est relue avant d'apparaître. Seules les consignes sont partagées, jamais vos documents ni votre mémoire.</p>
       <input aria-label="Rechercher" placeholder="Rechercher…" value={q} onChange={(e) => setQ(e.target.value)} />
       {i.ok && <Alert kind="ok">{i.ok}</Alert>}<Err error={i.error || l.error} />
@@ -63,7 +63,7 @@ export function TikTok({ me }: { me: Me }) {
   const list = (acc.data as any)?.accounts ?? [];
   useEffect(() => { if (!sel && list[0]) setSel(list[0].id); }, [list, sel]);
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Analyse TikTok</h1>
+    <div className="stack fadein"><h1 className="h1-page">Analyse TikTok</h1>
       <Alert>Cette analyse utilise les chiffres que vous saisissez, importez en CSV, ou récupérez automatiquement si vous avez connecté votre compte TikTok (offre Social, via l'autorisation officielle TikTok). Aucune donnée de tendances externe, aucune garantie de vues ni de revenus.</Alert>
       <form className="card row" onSubmit={(e) => { e.preventDefault(); a.run(async () => { const r = await api('/api/tiktok/accounts', { body: { handle, country: me.user.country ?? undefined, category: cat || undefined } }); setHandle(''); setSel(r.id); acc.reload(); }); }}>
         <input className="grow" aria-label="Identifiant TikTok" placeholder="@moncompte" value={handle} onChange={(e) => setHandle(e.target.value)} required /><input className="grow" aria-label="Catégorie" placeholder="Catégorie (mode, cuisine…)" value={cat} onChange={(e) => setCat(e.target.value)} /><button className="btn primary" disabled={a.busy}>Suivre ce compte</button></form>
@@ -129,17 +129,17 @@ export function Pricing({ me, cfg, reload }: { me: Me; cfg: any; reload: () => v
     location.href = r.paymentUrl;
   });
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Offres</h1>
+    <div className="stack fadein"><h1 className="h1-page">Offres</h1>
       {cfg?.demoMode && <Alert kind="warn">Mode démonstration : aucun vrai paiement n'est effectué.</Alert>}
       <Field label="Votre pays"><select value={country} onChange={(e) => { setCountry(e.target.value); setMethod(''); }}><option value="">Choisir…</option>{(cfg?.countries ?? []).map((c: any) => <option key={c.code} value={c.code}>{c.name}</option>)}</select></Field>
       {!country && <p className="muted">Choisissez votre pays pour voir les prix et les moyens de paiement.</p>}
       {country && d && (<>
         <div className="grid">{d.plans.filter((x: any) => !isPack(x)).map((x: any) => (<button key={x.code} type="button" className={`card pick ${plan === x.code ? 'sel' : ''}`} onClick={() => setPlan(x.code)} aria-pressed={plan === x.code}>
-          <h3>{x.name}</h3><p className="muted">{x.description}</p><div className="bignum" style={{ fontSize: '1.7rem' }}>{x.price ? fmtMoney(x.price.amount, x.price.currency) : 'Prix indisponible'}</div><p className="tiny">pour {x.durationDays} jours, sans renouvellement automatique</p></button>))}</div>
+          <h3>{x.name}</h3><p className="muted">{x.description}</p><div className="bignum sm">{x.price ? fmtMoney(x.price.amount, x.price.currency) : 'Prix indisponible'}</div><p className="tiny">pour {x.durationDays} jours, sans renouvellement automatique</p></button>))}</div>
         <h3>Jetons <span className="tiny">(1 jeton = 1 tâche IA · sans date d'expiration · consommés après votre abonnement et vos essais gratuits)</span></h3>
         <p className="tiny" style={{ marginTop: -6 }}>Solde actuel : <b>{fmtNum(me.entitlements.tokens ?? 0)}</b> jeton(s). Vous êtes prévenu par email quand il vous en reste 10 puis 0.</p>
         <div className="grid">{packs.map((x: any) => { const n = Number(x.features[0].slice(7)); return (<button key={x.code} type="button" className={`card pick ${plan === x.code ? 'sel' : ''}`} onClick={() => setPlan(x.code)} aria-pressed={plan === x.code}>
-          <h3>{fmtNum(n)} jetons</h3><div className="bignum" style={{ fontSize: '1.5rem' }}>{x.price ? fmtMoney(x.price.amount, x.price.currency) : 'Prix indisponible'}</div>{x.price && <p className="tiny" style={{ margin: 0 }}>{(x.price.amount / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} {x.price.currency} le jeton</p>}</button>); })}</div>
+          <h3>{fmtNum(n)} jetons</h3><div className="bignum sm">{x.price ? fmtMoney(x.price.amount, x.price.currency) : 'Prix indisponible'}</div>{x.price && <p className="tiny" style={{ margin: 0 }}>{(x.price.amount / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} {x.price.currency} le jeton</p>}</button>); })}</div>
         <h3>Moyen de paiement</h3>
         <div role="radiogroup" aria-label="Moyen de paiement">{methods.map((m) => <div key={m.id} role="radio" aria-checked={method === m.id} aria-disabled={!m.available} tabIndex={m.available ? 0 : -1} className={`method ${method === m.id ? 'sel' : ''} ${m.available ? '' : 'off'}`} onClick={() => m.available && setMethod(m.id)} onKeyDown={(e) => { if (m.available && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); setMethod(m.id); } }}>
           <b>{m.label}</b>{!m.available && <span className="tiny">{m.note}</span>}</div>)}</div>
@@ -171,7 +171,7 @@ export function Developer() {
   const k = useAsync(() => api('/api/keys')); const [name, setName] = useState(''); const [created, setCreated] = useState<string | null>(null); const a = useAction();
   const base = (window.__API_BASE__ || location.origin);
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>API pour développeurs</h1>
+    <div className="stack fadein"><h1 className="h1-page">API pour développeurs</h1>
       <p className="muted">Appelez Velyra AI depuis votre propre application. Chaque appel de chat consomme une tâche de votre compte. Limite : 60 requêtes par minute et par clé.</p>
       <form className="card row" onSubmit={(e) => { e.preventDefault(); a.run(async () => { const r = await api('/api/keys', { body: { name } }); setCreated(r.key); setName(''); k.reload(); }); }}>
         <input className="grow" aria-label="Nom de la clé" placeholder="Nom de la clé (ex. : mon site)" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} /><button className="btn primary" disabled={a.busy}>Créer une clé</button></form>
@@ -209,7 +209,7 @@ function UsageHistory() {
 export function Account({ me, reload, onLogout }: { me: Me; reload: () => void; onLogout: () => void }) {
   const s = useAsync(() => api('/api/account/sessions')); const a = useAction(); const del = useAction(); const [pw, setPw] = useState(''); const [open, setOpen] = useState(false); const [code, setCode] = useState('');
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Mon compte</h1>
+    <div className="stack fadein"><h1 className="h1-page">Mon compte</h1>
       <div className="card"><p><b>{me.user.email}</b></p><p className="muted">Email {me.user.emailVerified ? 'confirmé' : 'non confirmé'} · Téléphone {me.user.phoneVerified ? `confirmé (${me.user.phone})` : 'non confirmé'} · Pays : {me.user.country ?? 'non renseigné'}</p>
         <div className="row"><button className="btn" onClick={() => a.run(() => download('/api/account/export', 'velyra-mes-donnees.json'))}>Exporter mes données</button><button className="btn" onClick={async () => { await api('/api/auth/logout', { method: 'POST', body: {} }).catch(() => undefined); onLogout(); }}>Se déconnecter</button></div><Err error={a.error} /></div>
       <UsageHistory />

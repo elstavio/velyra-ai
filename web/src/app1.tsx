@@ -202,7 +202,7 @@ export function Memory() {
   const m = useAsync(() => api('/api/memories')); const [t, setT] = useState(''); const a = useAction();
   const list = (m.data as any)?.memories ?? [];
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Mémoire</h1>
+    <div className="stack fadein"><h1 className="h1-page">Mémoire</h1>
       <p className="muted">Ce que l'assistant doit savoir de vous d'une conversation à l'autre. Il n'enregistre rien tout seul : tout vient de vous. {list.length}/100.</p>
       <form className="row" onSubmit={(e) => { e.preventDefault(); a.run(async () => { await api('/api/memories', { body: { content: t } }); setT(''); m.reload(); }); }}>
         <input className="grow" aria-label="Nouveau souvenir" placeholder="Ex. : Je vends des pagnes à Abidjan." value={t} onChange={(e) => setT(e.target.value)} maxLength={500} /><button className="btn primary" disabled={a.busy || t.trim().length < 2}>Ajouter</button></form>
@@ -228,7 +228,7 @@ export function Documents() {
     u.run(async () => { const dataBase64 = await fileToBase64(f); await api('/api/documents/upload', { body: { title: f.name, filename: f.name, mime: f.type, dataBase64 } }); setFileName(''); d.reload(); }, `« ${f.name} » importé.`);
     e.target.value = ''; };
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Documents</h1>
+    <div className="stack fadein"><h1 className="h1-page">Documents</h1>
       <form className="card" onSubmit={(e) => { e.preventDefault(); a.run(async () => { await api('/api/documents', { body: { title, content } }); setTitle(''); setContent(''); d.reload(); }); }}>
         <h3>Ajouter un texte</h3>
         <Field label="Titre"><input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required /></Field>
@@ -263,7 +263,7 @@ export function Agents() {
   const list = (g.data as any)?.agents ?? [];
   const save = (e: React.FormEvent) => { e.preventDefault(); a.run(async () => { await api(editing ? `/api/agents/${editing}` : '/api/agents', { method: editing ? 'PUT' : 'POST', body: f }); setF(blank); setEditing(null); g.reload(); }); };
   return (
-    <div className="stack fadein"><h1 style={{ fontSize: '1.5rem' }}>Agents</h1><p className="muted">Un agent est un assistant avec ses propres consignes. Choisissez-le ensuite dans la conversation.</p>
+    <div className="stack fadein"><h1 className="h1-page">Agents</h1><p className="muted">Un agent est un assistant avec ses propres consignes. Choisissez-le ensuite dans la conversation.</p>
       <form className="card" onSubmit={save}><h3>{editing ? 'Modifier l\'agent' : 'Nouvel agent'}</h3>
         <Field label="Nom"><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required minLength={2} maxLength={60} /></Field>
         <Field label="Description"><input value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={300} /></Field>

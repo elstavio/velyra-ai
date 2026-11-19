@@ -23,7 +23,7 @@ export function Social({ me, reload }: { me: Me; reload: () => void }) {
   if (pl.loading) return <Loading />;
   return (
     <div className="stack fadein">
-      <h1 style={{ fontSize: '1.5rem' }}>Réseaux sociaux</h1>
+      <h1 className="h1-page">Réseaux sociaux</h1>
       <Hint />
       {!entitled && <div className="card"><h3>Offre « Velyra Social »</h3>
         <p>Connectez vos comptes pour que l'agent Créateur de contenu travaille avec <b>vos vrais chiffres</b> (abonnés, vues, publications qui marchent) au lieu de conseils génériques. Incluse : tout Velyra Pro.</p>

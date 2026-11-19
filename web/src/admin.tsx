@@ -49,7 +49,7 @@ export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => v
   const me = useAsync(() => api('/api/admin/me', { admin: true }));
   return (
     <div className="wrap fadein" style={{ paddingTop: 18, paddingBottom: 60 }}>
-      <div className="row between"><h1 style={{ fontSize: '1.5rem' }}>Administration</h1><div className="row"><span className="tiny">{(me.data as any)?.email}</span><button className="btn sm" onClick={async () => { await api('/api/admin/auth/logout', { method: 'POST', body: {}, admin: true }).catch(() => undefined); tokens.setAdmin(null); onLogout(); go('/admin/connexion'); }}>Déconnexion</button></div></div>
+      <div className="row between"><h1 className="h1-page">Administration</h1><div className="row"><span className="tiny">{(me.data as any)?.email}</span><button className="btn sm" onClick={async () => { await api('/api/admin/auth/logout', { method: 'POST', body: {}, admin: true }).catch(() => undefined); tokens.setAdmin(null); onLogout(); go('/admin/connexion'); }}>Déconnexion</button></div></div>
       <nav className="tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={tab === k ? 'on' : ''}>{l}</a>)}</nav>
       {tab === '' && <Overview />}{tab === 'utilisateurs' && <Users />}{tab === 'paiements' && <Payments />}{tab === 'portefeuille' && <Wallet />}{tab === 'fraude' && <Fraud />}
       {tab === 'securite' && <Security />}{tab === 'controles' && <Controls />}{tab === 'finances' && <Finance />}{tab === 'jetons' && <TokensAdmin />}{tab === 'reseaux' && <SocialAdmin />}{tab === 'agents' && <Agents />}{tab === 'ia' && <Insights />}{tab === 'marketplace' && <Moderation />}{tab === 'offres' && <Plans />}{tab === 'systeme' && <System />}

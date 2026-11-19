@@ -34,6 +34,8 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.56 var(--font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 h1,h2,h3{font-family:var(--font-display);line-height:1.1;letter-spacing:-.01em;margin:0 0 .45em;font-weight:600}
 h1{font-size:clamp(2rem,5.6vw,3.1rem);font-weight:650} h2{font-size:1.4rem} h3{font-size:1.06rem;font-weight:600}
+/* I1 : titre de page applicatif (distinct du h1 de la vitrine publique, qui garde sa taille fluide ci-dessus) */
+h1.h1-page{font-size:1.5rem}
 p{margin:0 0 .8em} a{color:var(--gold);text-underline-offset:2px} small,.muted{color:var(--ink-2)} .tiny{font-size:.82rem;color:var(--ink-3)}
 :focus-visible{outline:2.5px solid var(--gold-bright);outline-offset:2px;border-radius:6px}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -74,6 +76,8 @@ main.page{padding:22px 0 96px}
 /* éléments de page */
 .meter{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)} .meter>i{display:block;height:100%;background:var(--gold-bright)}
 .bignum{font-family:var(--font-display);font-size:2.5rem;font-weight:650;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+/* I1 : variante compacte pour une statistique secondaire dans une grille de cartes (vs le grand chiffre principal ci-dessus) */
+.bignum.sm{font-size:1.6rem}
 .hero{padding:40px 0 30px;display:grid;gap:30px} @media(min-width:860px){.hero{grid-template-columns:1.1fr .9fr;align-items:center;padding:68px 0 46px}}
 .hero p.lead{font-size:1.14rem;color:var(--ink-2);max-width:34em}
 .convo{display:grid;gap:9px} .bubble{padding:11px 14px;border-radius:15px;max-width:88%;white-space:pre-wrap;word-wrap:break-word;font-size:.95rem;line-height:1.45} .bubble.u{background:var(--navy);color:#fff;justify-self:end;border-bottom-right-radius:4px} .bubble.a{background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:4px}

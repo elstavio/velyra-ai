@@ -23,7 +23,7 @@ export function TokensAdmin() {
   const o = useAsync(() => api('/api/admin/tokens', A)); const a = useAction(); const [f, setF] = useState({ email: '', delta: '', reason: '' }); const d: any = o.data;
   if (o.loading && !d) return <Loading />; if (!d) return <Err error={o.error ?? 'Indisponible'} />;
   return (<div className="stack">
-    <div className="grid">{[['Vendus', d.sold], ['Offerts', d.granted], ['Consommés', d.used], ['Restitués', d.refunded], ['En circulation', d.outstanding], ['Détenteurs', d.holders]].map(([k, v]) => <div className="card" key={k as string}><div className="bignum" style={{ fontSize: '1.6rem' }}>{fmtNum(v as number)}</div><p className="muted" style={{ margin: 0 }}>{k}</p></div>)}</div>
+    <div className="grid">{[['Vendus', d.sold], ['Offerts', d.granted], ['Consommés', d.used], ['Restitués', d.refunded], ['En circulation', d.outstanding], ['Détenteurs', d.holders]].map(([k, v]) => <div className="card" key={k as string}><div className="bignum sm">{fmtNum(v as number)}</div><p className="muted" style={{ margin: 0 }}>{k}</p></div>)}</div>
     <p className="tiny">{d.note} Les prix des paquets se règlent dans « Offres et prix » (CDF, GNF et USD sont à définir par vous).</p>
     <form className="card" onSubmit={(e) => { e.preventDefault(); a.run(async () => { await api('/api/admin/tokens/adjust', { body: { email: f.email, delta: Number(f.delta), reason: f.reason }, ...A }); setF({ email: '', delta: '', reason: '' }); o.reload(); }); }}>
       <h3>Ajouter ou retirer des jetons</h3><div className="row" style={{ flexWrap: 'wrap', gap: 12 }}>
@@ -62,9 +62,9 @@ export function Finance() {
   return (<div className="stack">
     <div className="row"><select aria-label="Période" value={days} onChange={(e) => setDays(Number(e.target.value))} style={{ width: 'auto' }}>{[7, 30, 90, 365].map((n) => <option key={n} value={n}>{n} derniers jours</option>)}</select>
       <button className="btn" onClick={() => download('/api/admin/export/payments', 'paiements.csv', true)}>Exporter les paiements (CSV)</button><button className="btn" onClick={() => download('/api/admin/export/users', 'utilisateurs.csv', true)}>Exporter les utilisateurs (CSV)</button></div>
-    <div className="grid"><div className="card"><div className="bignum" style={{ fontSize: '1.3rem' }}>{sum(d.byPlan)}</div><p className="muted" style={{ margin: 0 }}>encaissé sur la période</p></div>
-      <div className="card"><div className="bignum" style={{ fontSize: '1.6rem' }}>{d.activeSubscribers}</div><p className="muted" style={{ margin: 0 }}>abonnés actifs maintenant</p></div>
-      <div className="card"><div className="bignum" style={{ fontSize: '1.6rem' }}>{d.flagged}</div><p className="muted" style={{ margin: 0 }}>paiement(s) signalé(s)</p></div></div>
+    <div className="grid"><div className="card"><div className="bignum sm">{sum(d.byPlan)}</div><p className="muted" style={{ margin: 0 }}>encaissé sur la période</p></div>
+      <div className="card"><div className="bignum sm">{d.activeSubscribers}</div><p className="muted" style={{ margin: 0 }}>abonnés actifs maintenant</p></div>
+      <div className="card"><div className="bignum sm">{d.flagged}</div><p className="muted" style={{ margin: 0 }}>paiement(s) signalé(s)</p></div></div>
     <div className="card"><h3>Par offre</h3><Table head={['Offre', 'Ventes', 'Total']} rows={d.byPlan.map((r: any) => [r.plan_code, r.n, fmtMoney(r.total, r.currency)])} empty="Aucun encaissement." /></div>
     <div className="card"><h3>Par moyen de paiement</h3><Table head={['Moyen', 'Ventes', 'Total']} rows={d.byChannel.map((r: any) => [r.channel, r.n, fmtMoney(r.total, r.currency)])} empty="Aucun encaissement." /></div>
     <div className="card"><h3>État des paiements créés</h3><Table head={['État', 'Nombre']} rows={d.status.map((r: any) => [<StatusChip key="s" s={r.status} />, r.n])} /></div>
