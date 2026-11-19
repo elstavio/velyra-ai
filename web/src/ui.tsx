@@ -158,6 +158,16 @@ export function AreaTrend({ data, label, format = fmtNum, height = 120 }: { data
   );
 }
 
+/**
+ * Palette du donut : 4 couleurs fixes. Au-delà de 4 catégories dans `data`,
+ * les couleurs sont réutilisées de façon cyclique (voir `i % DONUT_COLORS.length`
+ * plus bas) : une 5e catégorie reprend la couleur de la 1re, une 6e celle de la
+ * 2e, etc. Les catégories restent distinguées par leur libellé dans la légende,
+ * mais plus par la couleur seule au-delà de 4 entrées. Limite connue et
+ * volontairement conservée ici (F5) : étendre la palette ou changer ce
+ * comportement est une décision à valider séparément, pas un changement
+ * arbitraire à faire au passage.
+ */
 const DONUT_COLORS = ['var(--gold-bright)', 'var(--cat-2)', 'var(--cat-3)', 'var(--ink-3)'];
 /** Diagramme en anneau pour une répartition catégorielle (ex. type de tâche). */
 export function Donut({ data, label }: { data: { k: string; v: number }[]; label: string }) {
