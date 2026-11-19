@@ -75,9 +75,18 @@ export const fmtMoney = (n: number, cur: string) => `${new Intl.NumberFormat('fr
 export const fmtNum = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
 
 export function StatusChip({ s }: { s: string }) {
-  const good = ['succeeded', 'sent', 'confirmed', 'active', 'approved', 'done', 'ok'].includes(s);
-  const bad = ['failed', 'abandoned', 'rejected', 'revoked', 'suspended', 'critical', 'high', 'review'].includes(s);
-  const warn = ['pending', 'held', 'sending', 'medium', 'open'].includes(s);
+  // F6 : statuts couvrants, verifies un par un dans le code serveur (server/services/*.ts,
+  // server/providers/stripe.ts) avant d'etre classes ici. Un statut absent des 3 listes
+  // reste neutre (chip sans couleur) : c'est le cas voulu pour 'skipped' (sysagents.ts),
+  // que le serveur lui-meme traite comme non problematique (il n'entre ni dans le calcul
+  // d'echec ni dans celui de degradation de SuperCheck), et pour tout statut futur non
+  // encore identifie ici.
+  const good = ['succeeded', 'sent', 'confirmed', 'active', 'approved', 'done', 'ok',
+    'manual_done', 'no_payment_required', 'paid', 'published'].includes(s);
+  const bad = ['failed', 'abandoned', 'rejected', 'revoked', 'suspended', 'critical', 'high', 'review',
+    'discarded', 'expired', 'mismatch', 'reconnect'].includes(s);
+  const warn = ['pending', 'held', 'sending', 'medium', 'open',
+    'degraded', 'draft', 'incomplete', 'publishing', 'queued', 'running'].includes(s);
   return <span className={`chip ${good ? 'good' : bad ? 'bad' : warn ? 'warn' : ''}`}>{s}</span>;
 }
 
