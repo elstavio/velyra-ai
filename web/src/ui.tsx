@@ -158,7 +158,8 @@ export function Ring({ pct, big, small }: { pct: number; big: ReactNode; small: 
   return (
     <div className="ring-wrap">
       <svg viewBox="0 0 104 104"><circle className="track" cx={52} cy={52} r={r} /><circle className="fill" cx={52} cy={52} r={r} strokeDasharray={c} style={{ strokeDashoffset: off, '--ring-from': c, '--ring-to': off } as CSSProperties} /></svg>
-      <div className="mid"><b style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 650 }}>{big}</b><span className="tiny">{small}</span></div>
+      {/* I2 : .bignum.xs remplace l'ancien style inline dupliqué (même famille/graisse/tabular-nums que les autres grands chiffres, taille réduite pour tenir dans l'anneau) */}
+      <div className="mid"><b className="bignum xs">{big}</b><span className="tiny">{small}</span></div>
     </div>
   );
 }

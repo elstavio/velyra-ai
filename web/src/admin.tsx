@@ -68,7 +68,7 @@ function Overview() {
   let i = 0; const stag = () => ({ '--d': i++ } as CSSProperties);
   return (
     <div className="stack">
-      <div className="grid">{kpis.map(([k, v]) => <div className="card kpi stagger" style={stag()} key={k}><span className="tiny">{k}</span><b><CountUp value={v} /></b></div>)}</div>
+      <div className="grid">{kpis.map(([k, v]) => <div className="card kpi stagger" style={stag()} key={k}><span className="tiny">{k}</span><b className="bignum sm"><CountUp value={v} /></b></div>)}</div>
       <div className="card stagger" style={stag()}><div className="row between"><h3>Revenus encaissés (90 jours)</h3>{currencies.length > 1 && <select aria-label="Devise" value={c} onChange={(e) => setCur(e.target.value)} style={{ width: 'auto' }}>{currencies.map((z) => <option key={z}>{z}</option>)}</select>}</div>
         <p className="muted">Aujourd'hui : {money(x.revenue.today)} · 7 jours : {money(x.revenue.last7days)} · 30 jours : {money(x.revenue.last30days)}</p>
         {series.length ? <Bars label={`Revenus quotidiens en ${c}`} data={series} format={(n) => fmtMoney(n, c)} /> : <p className="muted">Aucun paiement confirmé sur la période.</p>}
