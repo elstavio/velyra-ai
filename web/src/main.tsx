@@ -46,7 +46,10 @@ function App() {
     return <Shell path={path} onLogout={logout}><PaymentReturn ref_={decodeURIComponent(path.split('/').pop() ?? '')} reload={loadMe} /></Shell>;
   }
   if (path === '/confidentialite' || path === '/conditions') return <Shell path={path} onLogout={auth ? logout : undefined}><Legal page={path.slice(1) as 'confidentialite' | 'conditions'} /></Shell>;
-  if (path === '/conformite') return <Shell path={path} onLogout={auth ? logout : undefined}><ComplianceCenter /></Shell>;
+  // I4 : "/conformite" peut désormais porter un sous-chemin (ex. "/conformite/cookies") pour le lien direct
+  // vers l'une des 10 sections — même convention que "/admin/<section>" ci-dessus (path.startsWith +
+  // sous-chemin transmis en prop à ComplianceCenter, qui en extrait elle-même la section active).
+  if (path === '/conformite' || path.startsWith('/conformite/')) return <Shell path={path} onLogout={auth ? logout : undefined}><ComplianceCenter tab={path.replace(/^\/conformite\/?/, '')} /></Shell>;
   const isPrivate = path.startsWith('/app') || path === '/offres';
   if (!isPrivate) {
     if (path === '/connexion') return <Shell path={path}><Login cfg={cfg} onAuth={onAuth} /></Shell>;

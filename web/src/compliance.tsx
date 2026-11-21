@@ -26,15 +26,20 @@ function Provisoire({ children }: { children: React.ReactNode }) {
   return <Alert kind="warn">{children}</Alert>;
 }
 
-export function ComplianceCenter() {
-  const [tab, setTab] = useState('mentions');
+export function ComplianceCenter({ tab: path }: { tab: string }) {
+  // I4 : la section active vient de l'URL ("#/conformite/<clé>"), pas d'un état local — le lien direct et
+  // le rechargement de page sont ainsi corrects par construction. Repli sur "mentions" (la première section)
+  // si le sous-chemin est absent (ex. lien "Centre de conformité" du pied de page, qui pointe vers
+  // #/conformite sans sous-chemin) ou ne correspond à aucune clé connue.
+  const sub = path.split('/')[0];
+  const tab = SECTIONS.some(([k]) => k === sub) ? sub : 'mentions';
   return (
     <div className="wrap" style={{ maxWidth: 820, paddingTop: 24, paddingBottom: 60 }}>
       <h1>Centre de conformité, de transparence et de protection des utilisateurs</h1>
       <p className="muted">Chaque page ci-dessous décrit ce que Velyra AI fait réellement — pas ce qu'un site type ferait en général. Quand un point dépend encore d'une décision de l'éditeur (raison sociale, délai de remboursement exact), c'est marqué « à compléter » plutôt que présenté comme déjà en place.</p>
       <div className="tabs" role="tablist" aria-label="Sections du centre de conformité" style={{ marginTop: 18 }}>
         {SECTIONS.map(([k, l]) => (
-          <a key={k} id={`compliance-tab-${k}`} href="#/conformite" role="tab" aria-selected={tab === k} aria-controls="compliance-panel" tabIndex={tab === k ? 0 : -1} className={tab === k ? 'on' : ''} onClick={(e) => { e.preventDefault(); setTab(k); }} onKeyDown={rovingTabsKeyDown}>{l}</a>
+          <a key={k} id={`compliance-tab-${k}`} href={`#/conformite/${k}`} role="tab" aria-selected={tab === k} aria-controls="compliance-panel" tabIndex={tab === k ? 0 : -1} className={tab === k ? 'on' : ''} onKeyDown={rovingTabsKeyDown}>{l}</a>
         ))}
       </div>
 
