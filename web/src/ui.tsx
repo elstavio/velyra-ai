@@ -115,7 +115,16 @@ export function StatusChip({ s }: { s: string }) {
 
 export function Table({ head, rows, empty = 'Rien à afficher pour le moment.' }: { head: string[]; rows: ReactNode[][]; empty?: string }) {
   if (!rows.length) return <p className="muted">{empty}</p>;
-  return <div className="tablewrap"><table><thead><tr>{head.map((h) => <th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody></table></div>;
+  // I6 : rôles ARIA explicites + data-label sur chaque cellule. Sous 480px (voir styles.css), ce tableau
+  // passe en cartes empilées par un changement purement visuel de CSS "display" — or les navigateurs
+  // retirent la sémantique ARIA de tableau implicite dès que "display" n'est plus table/table-row/
+  // table-cell, ce qui romprait la navigation par tableau des lecteurs d'écran en dessous de ce seuil.
+  // Les rôles sont posés inconditionnellement (corrects à toute largeur, pas seulement en media query) :
+  // un rôle explicite identique au rôle implicite ne change rien pour un lecteur d'écran au-delà de 480px.
+  // "data-label" fournit l'étiquette visuelle de chaque cellule en mode carte ; une colonne sans en-tête
+  // (boutons d'action) n'en reçoit pas (head[j] vide → attribut omis), ce qui est volontaire : ces cellules
+  // s'expliquent déjà par elles-mêmes (icône, libellé de bouton).
+  return <div className="tablewrap"><table role="table"><thead role="rowgroup"><tr role="row">{head.map((h) => <th key={h} role="columnheader" scope="col">{h}</th>)}</tr></thead><tbody role="rowgroup">{rows.map((r, i) => <tr role="row" key={i}>{r.map((c, j) => <td role="cell" key={j} data-label={head[j] || undefined}>{c}</td>)}</tr>)}</tbody></table></div>;
 }
 
 /** Histogramme simple, accessible : chaque barre pousse depuis le bas au premier affichage, infobulle réelle au
