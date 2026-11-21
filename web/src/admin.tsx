@@ -47,12 +47,16 @@ export function AdminLogin({ onAuth }: { onAuth: () => void }) {
 const TABS: [string, string][] = [['', 'Vue d\'ensemble'], ['utilisateurs', 'Utilisateurs'], ['paiements', 'Paiements'], ['portefeuille', 'Portefeuille'], ['fraude', 'Fraude'], ['securite', 'Sécurité'], ['controles', 'Contrôles'], ['agents', 'Agents IA'],['finances', 'Finances'], ['jetons', 'Jetons'], ['reseaux', 'Réseaux'], ['ia', 'Analyses IA'], ['marketplace', 'Marketplace'], ['offres', 'Offres et prix'], ['systeme', 'Système']];
 export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => void }) {
   const me = useAsync(() => api('/api/admin/me', { admin: true }));
+  // I3 : "tab" peut désormais porter un sous-chemin (ex. "securite/intrusion") pour le lien direct vers
+  // une sous-section ; "section" n'en retient que le premier segment pour la nav de premier niveau et le
+  // choix du panneau — le composant concerné (ex. Security) lit lui-même le sous-chemin complet dans "tab".
+  const section = tab.split('/')[0];
   return (
     <div className="wrap fadein" style={{ paddingTop: 18, paddingBottom: 60 }}>
       <div className="row between"><h1 className="h1-page">Administration</h1><div className="row"><span className="tiny">{(me.data as any)?.email}</span><button className="btn sm" onClick={async () => { await api('/api/admin/auth/logout', { method: 'POST', body: {}, admin: true }).catch(() => undefined); tokens.setAdmin(null); onLogout(); go('/admin/connexion'); }}>Déconnexion</button></div></div>
-      <nav className="tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined}>{l}</a>)}</nav>
-      {tab === '' && <Overview />}{tab === 'utilisateurs' && <Users />}{tab === 'paiements' && <Payments />}{tab === 'portefeuille' && <Wallet />}{tab === 'fraude' && <Fraud />}
-      {tab === 'securite' && <Security />}{tab === 'controles' && <Controls />}{tab === 'finances' && <Finance />}{tab === 'jetons' && <TokensAdmin />}{tab === 'reseaux' && <SocialAdmin />}{tab === 'agents' && <Agents />}{tab === 'ia' && <Insights />}{tab === 'marketplace' && <Moderation />}{tab === 'offres' && <Plans />}{tab === 'systeme' && <System />}
+      <nav className="tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={section === k ? 'on' : ''} aria-current={section === k ? 'page' : undefined}>{l}</a>)}</nav>
+      {section === '' && <Overview />}{section === 'utilisateurs' && <Users />}{section === 'paiements' && <Payments />}{section === 'portefeuille' && <Wallet />}{section === 'fraude' && <Fraud />}
+      {section === 'securite' && <Security tab={tab} />}{section === 'controles' && <Controls />}{section === 'finances' && <Finance />}{section === 'jetons' && <TokensAdmin />}{section === 'reseaux' && <SocialAdmin />}{section === 'agents' && <Agents />}{section === 'ia' && <Insights />}{section === 'marketplace' && <Moderation />}{section === 'offres' && <Plans />}{section === 'systeme' && <System />}
     </div>
   );
 }
@@ -125,16 +129,25 @@ function Fraud() {
     <div className="card"><Table head={['Date', 'Utilisateur', 'Motif', 'Décision', '']} rows={((f.data as any)?.reports ?? []).map((r: any) => [fmtDate(r.created_at), r.user_email ?? '—', r.reason, r.resolution ?? '', r.status === 'open' ? <div className="row" key="a"><button className="btn sm" onClick={() => rev(r.id, 'dismiss', false)}>Écarter</button><button className="btn sm danger" onClick={() => rev(r.id, 'confirm', true)}>Confirmer et suspendre</button></div> : ''])} empty="Aucun signalement." /></div></div>);
 }
 
-function Security() {
+// I3 : liste de référence des 7 sous-sections, utilisée à la fois pour le rendu des onglets et pour
+// valider le sous-chemin lu dans l'URL (ex. "#/admin/securite/intrusion" → sous-chemin "intrusion").
+const SECURITY_VIEWS: [string, string][] = [['events', 'Événements'], ['intrusion', 'Piège & intrusions'], ['retraits', 'Retraits à confirmer'], ['passkeys', 'Clés de sécurité'], ['blocks', 'IP bloquées'], ['sessions', 'Sessions'], ['logins', 'Connexions']];
+
+function Security({ tab }: { tab: string }) {
   const ev = useAsync(() => api('/api/admin/security/events', A)); const bl = useAsync(() => api('/api/admin/security/blocks', A)); const ses = useAsync(() => api('/api/admin/sessions', A)); const lg = useAsync(() => api('/api/admin/logins', A));
   const ov = useAsync(() => api('/api/admin/security/overview', A));
-  const [chain, setChain] = useState<any>(null); const [ip, setIp] = useState(''); const a = useAction(); const [view, setView] = useState('events');
+  const [chain, setChain] = useState<any>(null); const [ip, setIp] = useState(''); const a = useAction();
+  // I3 : la sous-section active vient de l'URL ("#/admin/securite/<clé>"), pas d'un état local — ce qui
+  // rend le lien direct et le rechargement de page corrects par construction. Repli sur "events" si le
+  // sous-chemin est absent (ex. venant du lien "Sécurité" de la nav principale) ou ne correspond à aucune clé connue.
+  const sub = tab.split('/')[1];
+  const view = SECURITY_VIEWS.some(([k]) => k === sub) ? sub! : 'events';
   const o: any = ov.data ?? {};
   return (<div className="stack">
     <div className="card row"><button className="btn" onClick={() => a.run(async () => setChain(await api('/api/admin/security/verify-chain', A)))}>Vérifier l'intégrité du journal</button><button className="btn" onClick={() => download('/api/admin/security/evidence', 'preuves-securite.json', true)}>Exporter les preuves (JSON)</button>
       {chain && <Alert kind={chain.ok ? 'ok' : 'err'}>{chain.ok ? `Journal intact (${chain.checked ?? ''} événements chaînés).` : `Anomalie détectée : ${JSON.stringify(chain).slice(0, 200)}`}</Alert>}<Err error={a.error} /></div>
     {(o.pendingPayouts ?? []).length > 0 && <Alert kind="warn">{o.pendingPayouts.length} retrait(s) en attente de votre confirmation par email — aucun fonds ne sortira tant que vous n'aurez pas cliqué le lien reçu.</Alert>}
-    <div className="tabs" role="tablist" aria-label="Sections de sécurité">{[['events', 'Événements'], ['intrusion', 'Piège & intrusions'], ['retraits', 'Retraits à confirmer'], ['passkeys', 'Clés de sécurité'], ['blocks', 'IP bloquées'], ['sessions', 'Sessions'], ['logins', 'Connexions']].map(([k, l]) => <a key={k} id={`security-tab-${k}`} href="#/admin/securite" role="tab" aria-selected={view === k} aria-controls="security-panel" tabIndex={view === k ? 0 : -1} className={view === k ? 'on' : ''} onClick={(e) => { e.preventDefault(); setView(k); }} onKeyDown={rovingTabsKeyDown}>{l}</a>)}</div>
+    <div className="tabs" role="tablist" aria-label="Sections de sécurité">{SECURITY_VIEWS.map(([k, l]) => <a key={k} id={`security-tab-${k}`} href={`#/admin/securite/${k}`} role="tab" aria-selected={view === k} aria-controls="security-panel" tabIndex={view === k ? 0 : -1} className={view === k ? 'on' : ''} onKeyDown={rovingTabsKeyDown}>{l}</a>)}</div>
     <div role="tabpanel" id="security-panel" aria-labelledby={`security-tab-${view}`} tabIndex={0}>
     {view === 'events' && <div className="card"><Table head={['Date', 'Type', 'Gravité', 'IP']} rows={((ev.data as any)?.events ?? []).map((e: any) => [fmtDate(e.created_at), e.type, <StatusChip key="s" s={e.severity} />, e.ip ?? '—'])} /></div>}
     {view === 'intrusion' && <div className="stack">
