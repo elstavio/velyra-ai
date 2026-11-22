@@ -187,7 +187,10 @@ export function TransparencyBanner() {
   const close = () => { setDismissed(true); try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* stockage indisponible : réapparaîtra, sans gravité */ } };
   return (
     <div className="card flat" role="note" style={{ margin: '0 auto 14px', maxWidth: 1040, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-      <p className="tiny" style={{ margin: 0, flex: 1 }}>Velyra AI ne dépose aucun cookie de suivi ni traceur publicitaire — seule une connexion Google ou Apple, si vous la choisissez, peut en déposer un de son côté. <a href="#/conformite">Détails dans le centre de conformité</a>.</p>
+      {/* I8 : lien direct vers la section "Cookies & traceurs" du centre de conformité (construite en I4),
+          plutôt que vers la première section par défaut ("Mentions légales") — l'alerte parle de cookies,
+          le lien doit donc y mener directement. */}
+      <p className="tiny" style={{ margin: 0, flex: 1 }}>Velyra AI ne dépose aucun cookie de suivi ni traceur publicitaire — seule une connexion Google ou Apple, si vous la choisissez, peut en déposer un de son côté. <a href="#/conformite/cookies">Détails dans le centre de conformité</a>.</p>
       <button type="button" className="btn sm" onClick={close}>Compris</button>
     </div>
   );
