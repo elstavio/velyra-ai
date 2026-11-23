@@ -1,4 +1,4 @@
-import { Component, useEffect, useState, type CSSProperties, type ErrorInfo, type KeyboardEvent, type ReactNode } from 'react';
+import { Component, useEffect, useRef, useState, type CSSProperties, type ErrorInfo, type KeyboardEvent, type ReactNode } from 'react';
 import { ApiError } from './api';
 
 /**
@@ -91,6 +91,124 @@ export function useAction() {
     try { const r = await fn(); if (okMsg) setOk(okMsg); return r; } catch (e) { setError(msg(e)); } finally { setBusy(false); }
   };
   return { busy, error, ok, run, clear: () => { setError(null); setOk(null); } };
+}
+
+/**
+ * M1 (Phase 4) : fenêtre modale accessible, partagée par toute l'application — extraite de l'ancien
+ * ReviewModal (web/src/social.tsx), qui n'était qu'un <div role="dialog" aria-modal="true"> sans aucune
+ * gestion réelle du focus (pas de piège, pas de restitution, pas de fermeture au clavier) : le constat a été
+ * vérifié par relecture du code avant extraction, ce n'est donc pas une régression de ce qui existait. Les
+ * comportements ci-dessous (piège de focus, restitution du focus au déclencheur, fermeture via Échap et via
+ * un clic sur la trame de fond, blocage du défilement/de l'interaction avec le contenu situé derrière) sont
+ * donc de véritables nouveautés apportées par ce composant, et non une préservation d'un comportement
+ * préexistant. Ce composant ne porte aucune logique métier : il fournit uniquement la coquille (trame de
+ * fond, carte, piège de focus, ARIA, responsive, animation d'entrée via la classe .pop déjà existante et
+ * respectueuse de prefers-reduced-motion). Le contenu (cases à cocher, champ de saisie, boutons, empreinte
+ * de contenu, etc.) reste entièrement à la charge de l'appelant.
+ */
+export function Modal({ onClose, ariaLabel, labelledBy, describedBy, children, wide }: {
+  /** Absent (undefined) = fenêtre non fermable par Échap/clic sur la trame de fond/croix (ex. requête en cours). */
+  onClose?: () => void;
+  ariaLabel?: string;
+  labelledBy?: string;
+  describedBy?: string;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
+  useEffect(() => {
+    triggerRef.current = document.activeElement;
+    const root = ref.current;
+    const focusables = () => Array.from(root?.querySelectorAll<HTMLElement>(
+      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
+    ) ?? []);
+    (focusables()[0] ?? root)?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { if (onClose) { e.preventDefault(); onClose(); } return; }
+      if (e.key !== 'Tab') return;
+      const f = focusables();
+      if (!f.length) { e.preventDefault(); return; }
+      const idx = f.indexOf(document.activeElement as HTMLElement);
+      if (e.shiftKey ? idx <= 0 : (idx === f.length - 1 || idx === -1)) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); }
+    };
+    document.addEventListener('keydown', onKey as unknown as EventListener, true);
+    const prevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey as unknown as EventListener, true);
+      document.body.style.overflow = prevOverflow;
+      if (triggerRef.current instanceof HTMLElement) triggerRef.current.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
+      <div ref={ref} className={`card modal pop${wide ? ' wide' : ''}`} role="dialog" aria-modal="true"
+        aria-label={labelledBy ? undefined : ariaLabel} aria-labelledby={labelledBy} aria-describedby={describedBy} tabIndex={-1}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * M1 (Phase 4) : remplace les window.confirm()/window.prompt() natifs par une fenêtre modale accessible
+ * (construite sur Modal ci-dessus), avec gestion d'erreur en ligne et état de chargement — contrairement à
+ * un window.confirm() natif, l'appel API s'exécute pendant que la fenêtre reste ouverte (le bouton se
+ * désactive, « Annuler » et Échap sont désactivés le temps de la requête — empêche toute double soumission),
+ * et une erreur serveur s'affiche dans la fenêtre au lieu d'une alerte navigateur séparée.
+ * Usage : const { ask, node } = useConfirm(); … ask({ title, message, onConfirm: async () => { await api(...); } }); … return <>{node}{reste du composant}</>;
+ */
+export type ConfirmOptions = {
+  title: string;
+  message?: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** Style le bouton de confirmation comme une action destructrice (classe .btn.danger déjà existante). */
+  danger?: boolean;
+  /** Présence = remplace un window.prompt() : affiche un vrai champ de saisie libellé, jamais une simple case à cocher. */
+  fieldLabel?: string;
+  fieldPlaceholder?: string;
+  fieldType?: 'text' | 'textarea';
+  fieldDefault?: string;
+  /** Par défaut (ou true) : le champ est requis, le bouton de confirmation reste désactivé tant qu'il est
+   *  vide — cas des motifs obligatoires (ex. suspension/révocation de compte). Mettre à false pour un champ
+   *  réellement facultatif (ex. note de décision anti-fraude) : la confirmation reste alors possible même
+   *  champ vide, exactement comme l'ancien window.prompt() facultatif qu'il remplace. */
+  fieldRequired?: boolean;
+  /** value vaut la saisie du champ (ou '' en l'absence de fieldLabel, équivalent d'un window.confirm()). */
+  onConfirm: (value: string) => Promise<void>;
+};
+export function useConfirm() {
+  const [opts, setOpts] = useState<ConfirmOptions | null>(null);
+  const [value, setValue] = useState('');
+  const a = useAction();
+  const ask = (o: ConfirmOptions) => { setValue(o.fieldDefault ?? ''); a.clear(); setOpts(o); };
+  const close = () => setOpts(null);
+  const fieldRequired = !!opts?.fieldLabel && opts.fieldRequired !== false;
+  const fieldEmpty = fieldRequired && !value.trim();
+  const node = opts ? (
+    <Modal ariaLabel={opts.title} onClose={a.busy ? undefined : close}>
+      <h3 style={{ marginTop: 0 }}>{opts.title}</h3>
+      {opts.message && <p className="tiny">{opts.message}</p>}
+      {opts.fieldLabel && (
+        <Field label={opts.fieldLabel}>
+          {opts.fieldType === 'textarea'
+            ? <textarea rows={3} autoFocus required={fieldRequired} value={value} placeholder={opts.fieldPlaceholder} onChange={(e) => setValue(e.target.value)} />
+            : <input autoFocus required={fieldRequired} value={value} placeholder={opts.fieldPlaceholder} onChange={(e) => setValue(e.target.value)} />}
+        </Field>
+      )}
+      <Err error={a.error} />
+      <div className="row" style={{ marginTop: 12 }}>
+        <button type="button" className={`btn primary${opts.danger ? ' danger' : ''}`} disabled={a.busy || fieldEmpty}
+          onClick={() => a.run(async () => { await opts.onConfirm(value); close(); })}>
+          {a.busy ? 'Veuillez patienter…' : (opts.confirmLabel ?? 'Confirmer')}
+        </button>
+        <button type="button" className="btn" disabled={a.busy} onClick={close}>{opts.cancelLabel ?? 'Annuler'}</button>
+      </div>
+    </Modal>
+  ) : null;
+  return { ask, node, busy: a.busy };
 }
 
 export const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—');

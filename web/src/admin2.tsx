@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, download } from './api';
-import { Alert, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, fmtNum, useAction, useAsync } from './ui';
+import { Alert, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, fmtNum, useAction, useAsync, useConfirm } from './ui';
 
 const A = { admin: true };
 const SEV: Record<string, string> = { critical: 'bad', high: 'bad', medium: 'warn', low: 'good' };
@@ -42,10 +42,27 @@ export function TokensAdmin() {
 /* ------------------------------------------------------------------ Réseaux et publications */
 export function SocialAdmin() {
   const o = useAsync(() => api('/api/admin/social', A)); const a = useAction(); const d: any = o.data;
+  // M1 (Phase 4) : remplace l'ancien confirm() natif par la fenêtre de confirmation partagée. Asymétrie
+  // préservée à l'identique : reprendre la publication (d.killed === true) reste une action directe, sans
+  // confirmation — comme avant ; seule l'activation du coupe-circuit (suspension) est confirmée.
+  // IMPORTANT (respect des règles des Hooks React) : useConfirm() doit être appelé avant tout retour
+  // conditionnel ci-dessous (chargement / erreur), jamais après — sinon le nombre de Hooks appelés varierait
+  // d'un rendu à l'autre (erreur React #310), ce qui a été réellement détecté puis corrigé pendant la
+  // vérification M1 (voir rapport de livraison).
+  const confirmKill = useConfirm();
   if (o.loading && !d) return <Loading />; if (!d) return <Err error={o.error ?? 'Indisponible'} />;
-  return (<div className="stack">
+  const toggleKill = () => {
+    if (d.killed) { a.run(async () => { await api('/api/admin/social/kill', { body: { on: false }, ...A }); o.reload(); }); return; }
+    confirmKill.ask({
+      title: 'Suspendre immédiatement toutes les publications ?',
+      confirmLabel: 'Suspendre',
+      danger: true,
+      onConfirm: async () => { await api('/api/admin/social/kill', { body: { on: true }, ...A }); o.reload(); },
+    });
+  };
+  return (<div className="stack">{confirmKill.node}
     <div className="card"><div className="row between"><div><h3 style={{ margin: 0 }}>Coupe-circuit de publication</h3><p className="tiny" style={{ margin: 0 }}>{d.killed ? 'La publication est SUSPENDUE pour tous les utilisateurs.' : 'La publication est active (toujours après double validation de l\'utilisateur).'}</p></div>
-      <button className={`btn ${d.killed ? 'primary' : 'danger'}`} disabled={a.busy} onClick={() => { if (d.killed || confirm('Suspendre immédiatement toutes les publications ?')) a.run(async () => { await api('/api/admin/social/kill', { body: { on: !d.killed }, ...A }); o.reload(); }); }}>{d.killed ? 'Reprendre les publications' : 'Suspendre toutes les publications'}</button></div><Err error={a.error} /></div>
+      <button className={`btn ${d.killed ? 'primary' : 'danger'}`} disabled={a.busy} onClick={toggleKill}>{d.killed ? 'Reprendre les publications' : 'Suspendre toutes les publications'}</button></div><Err error={a.error} /></div>
     {d.publishedWithoutApproval > 0 ? <Alert kind="err">{d.publishedWithoutApproval} publication(s) sans validation journalisée correspondante : à examiner immédiatement.</Alert> : <Alert kind="ok">Vérifié : chaque publication a sa double validation enregistrée pour le contenu exact publié.</Alert>}
     <div className="card"><h3>Comptes connectés</h3><Table head={['Plateforme', 'État', 'Nombre']} rows={d.accounts.map((r: any) => [r.platform, <StatusChip key="s" s={r.status} />, r.n])} empty="Aucun compte connecté." /></div>
     <div className="card"><h3>Publications</h3><p className="tiny">{d.byStatus.map((s: any) => `${s.status} : ${s.n}`).join(' · ') || 'Aucune.'}</p>

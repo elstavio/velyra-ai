@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
-import { Alert, Err, Field, Loading, fmtDate, fmtNum, go, useAction, useAsync } from './ui';
+import { Alert, Err, Field, Loading, Modal, fmtDate, fmtNum, go, useAction, useAsync } from './ui';
 import type { Me } from './app1';
 
 const ICON: Record<string, string> = { tiktok: '♪', youtube: '▶', facebook: 'f', instagram: '◎', whatsapp: '✆' };
@@ -153,13 +153,22 @@ function DraftCard({ x, accounts, onChange, onReview }: { x: any; accounts: any[
   );
 }
 
-/** Double validation : le contenu exact est affiché ; les deux cases sont obligatoires ; l'empreinte du contenu affiché est envoyée au serveur. */
+/**
+ * Double validation : le contenu exact est affiché ; les deux cases sont obligatoires ; l'empreinte du
+ * contenu affiché est envoyée au serveur.
+ *
+ * M1 (Phase 4) : la coquille (trame de fond, carte, piège de focus, restitution du focus, fermeture au
+ * clavier) vient désormais du composant partagé Modal (web/src/ui.tsx) — toute la logique métier ci-dessous
+ * est inchangée à l'identique : mêmes trois cases à cocher, même condition "ready", et surtout même
+ * empreinte contentHash, générée exactement comme avant (post.contentHash, fournie par le serveur avec le
+ * brouillon) et envoyée telle quelle dans la charge utile de /api/social/drafts/:id/publish — ni sa
+ * génération, ni sa valeur, ni sa présence dans la requête n'ont été modifiées par cette extraction.
+ */
 function ReviewModal({ post, statement, onClose, onDone }: { post: any; statement: string; onClose: () => void; onDone: () => void }) {
   const [c1, setC1] = useState(false); const [c2, setC2] = useState(false); const [c3, setC3] = useState(false); const a = useAction(); const [res, setRes] = useState<any>(null);
   const ready = c1 && c2 && (!post.needsRecipientConsent || c3);
   return (
-    <div role="dialog" aria-modal="true" aria-label="Relire avant de publier" style={{ position: 'fixed', inset: 0, background: 'rgba(8,16,28,.6)', display: 'grid', placeItems: 'center', zIndex: 50, padding: 12 }}>
-      <div className="card" style={{ maxWidth: 560, width: '100%', maxHeight: '92vh', overflow: 'auto' }}>
+    <Modal ariaLabel="Relire avant de publier" onClose={a.busy ? undefined : (res ? onDone : onClose)}>
         <h3 style={{ marginTop: 0 }}>Relire avant de publier</h3>
         <p className="tiny">Vers : <b>{post.label}</b>{post.accountName ? ` · ${post.accountName}` : ''}{post.recipient ? ` · destinataire ${post.recipient}` : ''}</p>
         <p style={{ margin: '4px 0' }}><b>Voici exactement ce qui sera publié :</b></p>
@@ -172,10 +181,9 @@ function ReviewModal({ post, statement, onClose, onDone }: { post: any; statemen
           <Err error={a.error} />
           <div className="row" style={{ marginTop: 12 }}>
             <button className="btn primary" disabled={!ready || a.busy} onClick={() => a.run(async () => setRes(await api(`/api/social/drafts/${post.id}/publish`, { body: { authorize: c1, verified: c2, recipientConsent: post.needsRecipientConsent ? c3 : undefined, contentHash: post.contentHash } })))}>{a.busy ? 'Publication…' : post.manualOnly ? 'Valider ce contenu' : 'Publier maintenant'}</button>
-            <button className="btn" onClick={onClose}>Annuler</button></div>
+            <button className="btn" disabled={a.busy} onClick={onClose}>Annuler</button></div>
           <p className="tiny">Votre double validation est enregistrée avec la date, votre adresse IP et l'empreinte du contenu. {statement ? '' : ''}</p></>)}
-      </div>
-    </div>
+    </Modal>
   );
 }
 

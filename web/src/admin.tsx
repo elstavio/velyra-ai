@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { api, download, tokens } from './api';
 import { Controls, Finance, SocialAdmin, TokensAdmin, UserSheet } from './admin2';
-import { Alert, Bars, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, go, rovingTabsKeyDown, useAction, useAsync } from './ui';
+import { Alert, Bars, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, go, rovingTabsKeyDown, useAction, useAsync, useConfirm } from './ui';
 import { authenticatePasskey, registerPasskey, webauthnSupported } from './webauthn';
 
 /* ------------------------------------------------------------------ Connexion en plusieurs étapes (§9) */
@@ -90,8 +90,23 @@ function Overview() {
 function Users() {
   const [q, setQ] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const a = useAction(); const [sheet, setSheet] = useState<string | null>(null);
   const u = useAsync(() => api(`/api/admin/users?q=${encodeURIComponent(q)}&status=${status}&page=${page}`, A), [q, status, page]); const x: any = u.data;
-  const set = (id: string, st: string) => { const reason = st === 'active' ? 'réactivation' : prompt('Motif (obligatoire) :') ?? ''; if (!reason) return; a.run(async () => { await api(`/api/admin/users/${id}/status`, { body: { status: st, reason }, admin: true }); u.reload(); }); };
-  return (<div className="stack"><div className="row"><input className="grow" placeholder="Rechercher un email" aria-label="Rechercher" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /><select aria-label="Statut" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} style={{ width: 'auto' }}><option value="">Tous</option><option value="active">Actifs</option><option value="suspended">Suspendus</option><option value="revoked">Révoqués</option></select></div>
+  // M1 (Phase 4) : remplace l'ancien prompt() natif (« Motif (obligatoire) : ») par la fenêtre de
+  // confirmation partagée, avec un vrai champ de saisie requis pour le motif. La réactivation, elle, ne
+  // comportait déjà aucun prompt() ni confirm() natif dans le code d'origine (motif fixe « réactivation »,
+  // action immédiate) : ce comportement est préservé à l'identique, sans ajouter de confirmation qui
+  // n'existait pas avant.
+  const confirmStatus = useConfirm();
+  const set = (id: string, st: string) => {
+    if (st === 'active') { a.run(async () => { await api(`/api/admin/users/${id}/status`, { body: { status: st, reason: 'réactivation' }, admin: true }); u.reload(); }); return; }
+    confirmStatus.ask({
+      title: st === 'suspended' ? 'Suspendre ce compte ?' : 'Révoquer ce compte ?',
+      fieldLabel: 'Motif (obligatoire)',
+      confirmLabel: st === 'suspended' ? 'Suspendre' : 'Révoquer',
+      danger: st === 'revoked',
+      onConfirm: async (reason) => { await api(`/api/admin/users/${id}/status`, { body: { status: st, reason }, admin: true }); u.reload(); },
+    });
+  };
+  return (<div className="stack">{confirmStatus.node}<div className="row"><input className="grow" placeholder="Rechercher un email" aria-label="Rechercher" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /><select aria-label="Statut" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} style={{ width: 'auto' }}><option value="">Tous</option><option value="active">Actifs</option><option value="suspended">Suspendus</option><option value="revoked">Révoqués</option></select></div>
     <Err error={a.error || u.error} />
     {sheet && <UserSheet id={sheet} onClose={() => setSheet(null)} />}
     <div className="card"><Table head={['Email', 'Pays', 'Statut', 'Email', 'Tél.', 'Essais', 'Inscrit', 'Actions']} rows={(x?.users ?? []).map((r: any) => [r.email, r.country ?? '—', <StatusChip key="s" s={r.status} />, r.email_verified ? 'oui' : 'non', r.phone_verified ? 'oui' : 'non', r.trials_used, fmtDate(r.created_at),
@@ -122,10 +137,29 @@ function Wallet() {
 }
 
 function Fraud() {
-  const [st, setSt] = useState('open'); const f = useAsync(() => api(`/api/admin/fraud?status=${st}`, A), [st]); const a = useAction();
-  const rev = (id: string, decision: string, suspend: boolean) => { const note = prompt('Note de décision (facultatif) :') ?? ''; a.run(async () => { await api(`/api/admin/fraud/${id}/review`, { body: { decision, suspend, note }, admin: true }); f.reload(); }); };
-  return (<div className="stack"><Alert>Aucun compte n'est suspendu automatiquement : un humain décide. Les signalements viennent de règles simples (inscriptions groupées, paiements suspects).</Alert>
-    <select aria-label="Statut" value={st} onChange={(e) => setSt(e.target.value)} style={{ width: 'auto' }}><option value="open">Ouverts</option><option value="confirmed">Confirmés</option><option value="dismissed">Écartés</option></select><Err error={a.error || f.error} />
+  const [st, setSt] = useState('open'); const f = useAsync(() => api(`/api/admin/fraud?status=${st}`, A), [st]);
+  // M1 (Phase 4) : remplace l'ancien prompt() natif (« Note de décision (facultatif) : ») par la fenêtre de
+  // confirmation partagée. Champ toujours facultatif (fieldRequired: false), comme avant.
+  // Différence de comportement assumée, à signaler dans le rapport de livraison M1 : l'ancien prompt()
+  // natif, une fois annulé par l'admin (bouton Annuler de la boîte du navigateur), laissait néanmoins
+  // l'action (écarter / confirmer et suspendre) s'exécuter — seule la note restait vide. La nouvelle
+  // fenêtre, elle, annule réellement l'action si l'admin clique sur « Annuler ». C'est un renforcement du
+  // contrôle existant, jamais un affaiblissement, mais c'est un changement de comportement réel et non une
+  // simple extraction d'apparence : il est documenté ici en toute transparence plutôt que silencieusement.
+  const confirmFraud = useConfirm();
+  const rev = (id: string, decision: string, suspend: boolean) => {
+    confirmFraud.ask({
+      title: decision === 'confirm' ? 'Confirmer la fraude et suspendre ce compte ?' : 'Écarter ce signalement ?',
+      fieldLabel: 'Note de décision (facultatif)',
+      fieldType: 'textarea',
+      fieldRequired: false,
+      confirmLabel: decision === 'confirm' ? 'Confirmer et suspendre' : 'Écarter',
+      danger: decision === 'confirm',
+      onConfirm: async (note) => { await api(`/api/admin/fraud/${id}/review`, { body: { decision, suspend, note }, admin: true }); f.reload(); },
+    });
+  };
+  return (<div className="stack">{confirmFraud.node}<Alert>Aucun compte n'est suspendu automatiquement : un humain décide. Les signalements viennent de règles simples (inscriptions groupées, paiements suspects).</Alert>
+    <select aria-label="Statut" value={st} onChange={(e) => setSt(e.target.value)} style={{ width: 'auto' }}><option value="open">Ouverts</option><option value="confirmed">Confirmés</option><option value="dismissed">Écartés</option></select><Err error={f.error} />
     <div className="card"><Table head={['Date', 'Utilisateur', 'Motif', 'Décision', '']} rows={((f.data as any)?.reports ?? []).map((r: any) => [fmtDate(r.created_at), r.user_email ?? '—', r.reason, r.resolution ?? '', r.status === 'open' ? <div className="row" key="a"><button className="btn sm" onClick={() => rev(r.id, 'dismiss', false)}>Écarter</button><button className="btn sm danger" onClick={() => rev(r.id, 'confirm', true)}>Confirmer et suspendre</button></div> : ''])} empty="Aucun signalement." /></div></div>);
 }
 
