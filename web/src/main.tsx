@@ -6,22 +6,40 @@ import { ComplianceCenter, TransparencyBanner } from './compliance';
 import { Account as _A } from './app2';
 import { Agents, Chat, Dashboard, Documents, Memory, type Me } from './app1';
 import { Account, Developer, Marketplace, PaymentReturn, Pricing, TikTok, Workflows } from './app2';
-import { AdminConsole, AdminLogin } from './admin';
+import { AdminConsole, AdminLogin, TABS } from './admin';
 import { Social } from './social';
 import { ErrorBoundary, Loading, go, useHash } from './ui';
 
 const NAV: [string, string, string][] = [['/app', 'Accueil', '⌂'], ['/app/chat', 'Discuter', '✎'], ['/app/memoire', 'Mémoire', '◉'], ['/app/documents', 'Documents', '▤'], ['/app/agents', 'Agents', '☺'], ['/app/workflows', 'Workflows', '⇉'], ['/app/marketplace', 'Marketplace', '❖'], ['/app/reseaux', 'Réseaux', '◎'], ['/app/tiktok', 'TikTok', '♪'], ['/offres', 'Offres', '€'], ['/app/api', 'API', '⌘'], ['/app/compte', 'Compte', '☰']];
 void _A;
 
-function Shell({ path, children, onLogout }: { path: string; children: React.ReactNode; onLogout?: () => void }) {
+// M2 (Phase 4) : glyphes de la barre mobile (.tabbar) pour les 15 sections admin, construits à partir
+// de admin.tsx::TABS (source unique des libellés/clés) — aucun doublon, aucune icône SVG (hors scope M2/M4).
+const ADMIN_ICON: Record<string, string> = { '': '▦', utilisateurs: '☺', paiements: '€', portefeuille: '◆', fraude: '⚠', securite: '⌘', controles: '✓', agents: '✎', finances: '▤', jetons: '●', reseaux: '◎', ia: '✺', marketplace: '❖', offres: '☰', systeme: '⚙' };
+const ADMIN_NAV: [string, string, string][] = TABS.map(([k, l]) => [`/admin${k ? '/' + k : ''}`, l, ADMIN_ICON[k] ?? '•']);
+
+// M2 (Phase 4) : prop `admin` ajoutée (rétrocompatible — tous les appels existants sans cette prop sont
+// inchangés). Quand `admin` est vrai : la nav desktop de l'en-tête n'est pas rendue (elle resterait la
+// SEULE navigation de premier niveau si on l'affichait avec 15 libellés — risque de retour à la ligne
+// dans l'en-tête sticky — et ferait doublon avec la nav interne à 15 sections déjà rendue par
+// AdminConsole/.tabs juste sous le titre « Administration », qui reste la hiérarchie de référence :
+// « navigation principale » = chrome du Shell, « navigation interne à l'administration » = ce .tabs
+// existant, inchangé) ; le bouton Déconnexion de l'en-tête est masqué (celui déjà présent dans
+// AdminConsole reste l'unique bouton, pas de doublon) ; la barre mobile .tabbar réutilise le même
+// mécanisme que le reste de l'app mais avec les 15 sections admin (ADMIN_NAV) à la place des 12 liens
+// généraux — c'est la « navigation mobile adaptée » demandée, obtenue par pure réutilisation (même
+// défilement horizontal que la barre existante) ; le bandeau de transparence (cookies, grand public)
+// n'est pas affiché dans cet espace interne.
+function Shell({ path, children, onLogout, admin }: { path: string; children: React.ReactNode; onLogout?: () => void; admin?: boolean }) {
+  const items = admin ? ADMIN_NAV : NAV;
   return (<>
     <a className="sr" href="#contenu">Aller au contenu</a>
-    <header className="top"><div className="wrap"><a className="brand" href={onLogout ? '#/app' : '#/'}><i aria-hidden="true" />Velyra AI</a>
-      {onLogout ? <><nav aria-label="Principal">{NAV.map(([p, l]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}>{l}</a>)}</nav><span style={{ flex: 1 }} /></> : <span style={{ flex: 1 }} />}
-      {onLogout ? <button className="btn sm" onClick={onLogout}>Déconnexion</button> : <a className="btn sm" href="#/connexion">Connexion</a>}</div></header>
-    <main className="page" id="contenu"><TransparencyBanner />{children}</main>
+    <header className="top"><div className="wrap"><a className="brand" href={onLogout ? (admin ? '#/admin' : '#/app') : '#/'}><i aria-hidden="true" />Velyra AI{admin ? ' · admin' : ''}</a>
+      {onLogout ? <>{!admin && <nav aria-label="Principal">{items.map(([p, l]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}>{l}</a>)}</nav>}<span style={{ flex: 1 }} /></> : <span style={{ flex: 1 }} />}
+      {onLogout ? (!admin && <button className="btn sm" onClick={onLogout}>Déconnexion</button>) : (!admin && <a className="btn sm" href="#/connexion">Connexion</a>)}</div></header>
+    <main className="page" id="contenu">{!admin && <TransparencyBanner />}{children}</main>
     <footer className="wrap tiny" style={{ paddingBottom: onLogout ? 90 : 24 }}><a href="#/confidentialite">Confidentialité</a> · <a href="#/conditions">Conditions d'utilisation</a> · <a href="#/conformite">Centre de conformité</a></footer>
-    {onLogout && <nav className="tabbar" aria-label="Navigation mobile">{NAV.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>}
+    {onLogout && <nav className="tabbar" aria-label="Navigation mobile">{items.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>}
   </>);
 }
 
@@ -37,9 +55,14 @@ function App() {
   const onAuth = () => { setAuth(!!tokens.user()); setAdminAuth(!!tokens.admin()); };
 
   // Administration (interface séparée, session distincte)
+  // M2 (Phase 4) : intégrée au Shell commun (lien d'évitement, pied de page, mécanisme .tabbar) via la
+  // prop `admin` — voir le commentaire sur Shell ci-dessus pour le détail du comportement en mode admin.
   if (path.startsWith('/admin')) {
-    if (path === '/admin/connexion' || !adminAuth) return <><header className="top"><div className="wrap"><a className="brand" href="#/"><i aria-hidden="true" />Velyra AI</a></div></header><main className="page"><AdminLogin onAuth={onAuth} /></main></>;
-    return <><header className="top"><div className="wrap"><a className="brand" href="#/admin"><i aria-hidden="true" />Velyra AI · admin</a></div></header><main className="page" id="contenu"><AdminConsole tab={path.replace(/^\/admin\/?/, '')} onLogout={onAuth} /></main></>;
+    if (path === '/admin/connexion' || !adminAuth) return <Shell path={path} admin><AdminLogin onAuth={onAuth} /></Shell>;
+    // `onLogout` ici n'est qu'un marqueur de mise en page « connecté » (nav/.tabbar/pied de page) pour
+    // Shell — il n'est jamais invoqué : le véritable bouton Déconnexion reste celui d'AdminConsole
+    // ci-dessous (inchangé), pour ne jamais en afficher deux.
+    return <Shell path={path} admin onLogout={() => {}}><AdminConsole tab={path.replace(/^\/admin\/?/, '')} onLogout={onAuth} /></Shell>;
   }
   if (path.startsWith('/paiement/retour/')) {
     if (!auth) return <Shell path={path}><div className="wrap"><p>Connectez-vous pour voir l'état de votre paiement. <a href="#/connexion">Connexion</a></p></div></Shell>;

@@ -44,7 +44,10 @@ export function AdminLogin({ onAuth }: { onAuth: () => void }) {
 }
 
 /* ------------------------------------------------------------------ Console */
-const TABS: [string, string][] = [['', 'Vue d\'ensemble'], ['utilisateurs', 'Utilisateurs'], ['paiements', 'Paiements'], ['portefeuille', 'Portefeuille'], ['fraude', 'Fraude'], ['securite', 'Sécurité'], ['controles', 'Contrôles'], ['agents', 'Agents IA'],['finances', 'Finances'], ['jetons', 'Jetons'], ['reseaux', 'Réseaux'], ['ia', 'Analyses IA'], ['marketplace', 'Marketplace'], ['offres', 'Offres et prix'], ['systeme', 'Système']];
+// M2 (Phase 4) : exporté pour que main.tsx puisse construire la navigation mobile (.tabbar)
+// de l'espace admin à partir de cette même liste (source unique des 15 sections), sans dupliquer
+// les libellés. Voir Shell({ admin }) dans main.tsx.
+export const TABS: [string, string][] = [['', 'Vue d\'ensemble'], ['utilisateurs', 'Utilisateurs'], ['paiements', 'Paiements'], ['portefeuille', 'Portefeuille'], ['fraude', 'Fraude'], ['securite', 'Sécurité'], ['controles', 'Contrôles'], ['agents', 'Agents IA'],['finances', 'Finances'], ['jetons', 'Jetons'], ['reseaux', 'Réseaux'], ['ia', 'Analyses IA'], ['marketplace', 'Marketplace'], ['offres', 'Offres et prix'], ['systeme', 'Système']];
 export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => void }) {
   const me = useAsync(() => api('/api/admin/me', { admin: true }));
   // I3 : "tab" peut désormais porter un sous-chemin (ex. "securite/intrusion") pour le lien direct vers
