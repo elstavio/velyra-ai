@@ -95,8 +95,13 @@ table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:t
 .top nav{display:none;gap:2px;margin-left:16px;flex-wrap:wrap} .top nav a{color:rgba(255,255,255,.72);text-decoration:none;padding:9px 11px;font-weight:600;font-size:.91rem;border-bottom:2px solid transparent;margin-bottom:-1px} .top nav a:hover{color:#fff} .top nav a.on{color:#fff;border-bottom-color:var(--gold-bright)}
 .top .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.28)} .top .btn:hover{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.06)}
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);overflow-x:auto}
-.tabbar a{flex:1 0 64px;text-align:center;padding:8px 4px;font-size:.72rem;font-weight:650;text-decoration:none;color:var(--ink-2)} .tabbar a.on{color:var(--gold)}
-.tabbar a b{display:block;font-size:1.2rem;line-height:1.2;font-weight:600}
+.tabbar a,.tabbar button{flex:1 0 64px;text-align:center;padding:8px 4px;font-size:.72rem;font-weight:650;text-decoration:none;color:var(--ink-2)} .tabbar a.on{color:var(--gold)}
+.tabbar a b,.tabbar button b{display:block;font-size:1.2rem;line-height:1.2;font-weight:600}
+/* M2-correction : bouton déclencheur du menu mobile admin (Shell, main.tsx) — réutilise exactement le
+   style des éléments .tabbar ci-dessus (règles combinées avec ,.tabbar button juste au-dessus), avec
+   seulement une réinitialisation des styles natifs du <button> (fond/bordure/police). */
+.tabbar button{background:none;border:none;font:inherit;cursor:pointer;width:100%}
+.tabbar button .chev{margin-left:3px;color:var(--ink-3)}
 main.page{padding:22px 0 96px}
 @media(min-width:860px){.top nav{display:flex}.tabbar{display:none}main.page{padding-bottom:48px}}
 /* éléments de page */
@@ -116,6 +121,19 @@ main.page{padding:22px 0 96px}
 .kpi{display:grid;gap:3px} /* I2 : l'ancienne règle ".kpi b" (1.65rem, -.01em, graisse par défaut du <b>) dupliquait .bignum avec des valeurs légèrement différentes ; le <b> des cartes KPI porte maintenant la classe .bignum.sm partagée, voir admin.tsx */
 .steps li{margin-bottom:6px}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--line)} .tabs a{padding:9px 13px;text-decoration:none;font-weight:600;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px;font-size:.93rem} .tabs a:hover{color:var(--ink)} .tabs a.on{color:var(--ink);border-bottom-color:var(--gold-bright);font-weight:650}
+/* M2-correction : la nav interne à 15 sections d'AdminConsole (.tabs.admin-top-tabs, web/src/admin.tsx)
+   fait désormais doublon, sur mobile, avec le bouton unique + menu de .tabbar (Shell, main.tsx) qui la
+   remplace à cette largeur — elle est donc masquée sous le point de rupture commun du Shell (860px, ligne
+   ci-dessus) et réapparaît inchangée en desktop. Ne touche à aucune autre nav .tabs (Sécurité, Conformité :
+   sans rapport avec .tabbar, donc aucune régression). */
+@media(max-width:859.98px){.admin-top-tabs{display:none}}
+/* M2-correction : liste des 15 sections dans la fenêtre modale mobile (Modal réutilisé tel quel, M1) —
+   mêmes jetons que le survol des lignes de tableau (tbody tr:hover) pour rester cohérent visuellement. */
+.admin-menu-list{display:flex;flex-direction:column;gap:2px;max-height:min(60vh,420px);overflow-y:auto;margin:0 -6px}
+.admin-menu-list a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);text-decoration:none;color:var(--ink-2);font-weight:600}
+.admin-menu-list a:hover{background:var(--surface-2)}
+.admin-menu-list a.on{color:var(--ink);background:var(--surface-2)}
+.admin-menu-list a b{width:20px;text-align:center;font-size:1.05rem}
 .method{display:flex;gap:10px;align-items:center;padding:13px;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;margin-bottom:8px} .method.sel{border-color:var(--gold-bright);box-shadow:0 0 0 1px var(--gold-bright)} .method.off{opacity:.5;cursor:not-allowed}
 code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem} pre{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;overflow:auto}
 .sr{position:absolute;left:-9999px}

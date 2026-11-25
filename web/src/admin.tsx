@@ -57,7 +57,10 @@ export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => v
   return (
     <div className="wrap fadein" style={{ paddingTop: 18, paddingBottom: 60 }}>
       <div className="row between"><h1 className="h1-page">Administration</h1><div className="row"><span className="tiny">{(me.data as any)?.email}</span><button className="btn sm" onClick={async () => { await api('/api/admin/auth/logout', { method: 'POST', body: {}, admin: true }).catch(() => undefined); tokens.setAdmin(null); onLogout(); go('/admin/connexion'); }}>Déconnexion</button></div></div>
-      <nav className="tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={section === k ? 'on' : ''} aria-current={section === k ? 'page' : undefined}>{l}</a>)}</nav>
+      {/* M2-correction : classe admin-top-tabs ajoutée uniquement pour que styles.css puisse masquer cette
+          nav sur mobile (<860px), où elle fait désormais doublon avec le bouton+menu unique de .tabbar
+          (Shell, main.tsx) — structure, libellés, routes et comportement desktop strictement inchangés. */}
+      <nav className="tabs admin-top-tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={section === k ? 'on' : ''} aria-current={section === k ? 'page' : undefined}>{l}</a>)}</nav>
       {section === '' && <Overview />}{section === 'utilisateurs' && <Users />}{section === 'paiements' && <Payments />}{section === 'portefeuille' && <Wallet />}{section === 'fraude' && <Fraud />}
       {section === 'securite' && <Security tab={tab} />}{section === 'controles' && <Controls />}{section === 'finances' && <Finance />}{section === 'jetons' && <TokensAdmin />}{section === 'reseaux' && <SocialAdmin />}{section === 'agents' && <Agents />}{section === 'ia' && <Insights />}{section === 'marketplace' && <Moderation />}{section === 'offres' && <Plans />}{section === 'systeme' && <System />}
     </div>

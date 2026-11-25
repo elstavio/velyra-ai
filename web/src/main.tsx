@@ -8,7 +8,7 @@ import { Agents, Chat, Dashboard, Documents, Memory, type Me } from './app1';
 import { Account, Developer, Marketplace, PaymentReturn, Pricing, TikTok, Workflows } from './app2';
 import { AdminConsole, AdminLogin, TABS } from './admin';
 import { Social } from './social';
-import { ErrorBoundary, Loading, go, useHash } from './ui';
+import { ErrorBoundary, Loading, Modal, go, useHash } from './ui';
 
 const NAV: [string, string, string][] = [['/app', 'Accueil', '⌂'], ['/app/chat', 'Discuter', '✎'], ['/app/memoire', 'Mémoire', '◉'], ['/app/documents', 'Documents', '▤'], ['/app/agents', 'Agents', '☺'], ['/app/workflows', 'Workflows', '⇉'], ['/app/marketplace', 'Marketplace', '❖'], ['/app/reseaux', 'Réseaux', '◎'], ['/app/tiktok', 'TikTok', '♪'], ['/offres', 'Offres', '€'], ['/app/api', 'API', '⌘'], ['/app/compte', 'Compte', '☰']];
 void _A;
@@ -18,20 +18,36 @@ void _A;
 const ADMIN_ICON: Record<string, string> = { '': '▦', utilisateurs: '☺', paiements: '€', portefeuille: '◆', fraude: '⚠', securite: '⌘', controles: '✓', agents: '✎', finances: '▤', jetons: '●', reseaux: '◎', ia: '✺', marketplace: '❖', offres: '☰', systeme: '⚙' };
 const ADMIN_NAV: [string, string, string][] = TABS.map(([k, l]) => [`/admin${k ? '/' + k : ''}`, l, ADMIN_ICON[k] ?? '•']);
 
-// M2 (Phase 4) : prop `admin` ajoutée (rétrocompatible — tous les appels existants sans cette prop sont
-// inchangés). Quand `admin` est vrai : la nav desktop de l'en-tête n'est pas rendue (elle resterait la
-// SEULE navigation de premier niveau si on l'affichait avec 15 libellés — risque de retour à la ligne
-// dans l'en-tête sticky — et ferait doublon avec la nav interne à 15 sections déjà rendue par
-// AdminConsole/.tabs juste sous le titre « Administration », qui reste la hiérarchie de référence :
+// M2-correction : trouve l'entrée ADMIN_NAV correspondant au chemin courant par préfixe le plus long
+// (pas une égalité stricte, car une section admin peut porter un sous-chemin, ex. "/admin/securite/intrusion"
+// doit rattacher "Sécurité", pas rater la correspondance). Sert au libellé du bouton déclencheur mobile et
+// au marquage de l'élément actif dans le menu — voir Shell ci-dessous.
+function activeAdminItem(path: string): [string, string, string] {
+  let best: [string, string, string] | null = null;
+  for (const it of ADMIN_NAV) { if (path === it[0] || path.startsWith(it[0] + '/')) { if (!best || it[0].length > best[0].length) best = it; } }
+  return best ?? ADMIN_NAV[0];
+}
+
+// M2 (Phase 4), corrigé après livraison : prop `admin` ajoutée (rétrocompatible — tous les appels existants
+// sans cette prop sont inchangés). Quand `admin` est vrai : la nav desktop de l'en-tête n'est pas rendue
+// (elle resterait la SEULE navigation de premier niveau si on l'affichait avec 15 libellés — risque de
+// retour à la ligne dans l'en-tête sticky — et ferait doublon avec la nav interne à 15 sections déjà rendue
+// par AdminConsole/.tabs juste sous le titre « Administration », qui reste la hiérarchie de référence :
 // « navigation principale » = chrome du Shell, « navigation interne à l'administration » = ce .tabs
-// existant, inchangé) ; le bouton Déconnexion de l'en-tête est masqué (celui déjà présent dans
-// AdminConsole reste l'unique bouton, pas de doublon) ; la barre mobile .tabbar réutilise le même
-// mécanisme que le reste de l'app mais avec les 15 sections admin (ADMIN_NAV) à la place des 12 liens
-// généraux — c'est la « navigation mobile adaptée » demandée, obtenue par pure réutilisation (même
-// défilement horizontal que la barre existante) ; le bandeau de transparence (cookies, grand public)
+// existant, inchangé en desktop) ; le bouton Déconnexion de l'en-tête est masqué (celui déjà présent dans
+// AdminConsole reste l'unique bouton, pas de doublon) ; le bandeau de transparence (cookies, grand public)
 // n'est pas affiché dans cet espace interne.
+// Correction (retour utilisateur après livraison M2) : sur mobile, .tabbar affichait une seconde fois les
+// 15 sections déjà listées par AdminConsole/.tabs juste au-dessus — deux navigations identiques, surcharge
+// l'écran. En mode admin, .tabbar porte désormais UN SEUL bouton (section active + libellé), qui ouvre le
+// composant Modal existant (M1, non modifié) listant les 15 sections — une seule navigation visible à la
+// fois, compacte, et la nav interne .tabs.admin-top-tabs correspondante est masquée sous 860px (styles.css)
+// pour qu'aucune des deux ne fasse doublon. Desktop strictement inchangé (.tabbar reste masquée ≥860px).
 function Shell({ path, children, onLogout, admin }: { path: string; children: React.ReactNode; onLogout?: () => void; admin?: boolean }) {
   const items = admin ? ADMIN_NAV : NAV;
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [path]);
+  const active = admin ? activeAdminItem(path) : null;
   return (<>
     <a className="sr" href="#contenu">Aller au contenu</a>
     <header className="top"><div className="wrap"><a className="brand" href={onLogout ? (admin ? '#/admin' : '#/app') : '#/'}><i aria-hidden="true" />Velyra AI{admin ? ' · admin' : ''}</a>
@@ -39,7 +55,17 @@ function Shell({ path, children, onLogout, admin }: { path: string; children: Re
       {onLogout ? (!admin && <button className="btn sm" onClick={onLogout}>Déconnexion</button>) : (!admin && <a className="btn sm" href="#/connexion">Connexion</a>)}</div></header>
     <main className="page" id="contenu">{!admin && <TransparencyBanner />}{children}</main>
     <footer className="wrap tiny" style={{ paddingBottom: onLogout ? 90 : 24 }}><a href="#/confidentialite">Confidentialité</a> · <a href="#/conditions">Conditions d'utilisation</a> · <a href="#/conformite">Centre de conformité</a></footer>
-    {onLogout && <nav className="tabbar" aria-label="Navigation mobile">{items.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>}
+    {onLogout && (admin
+      ? <nav className="tabbar" aria-label="Navigation mobile"><button type="button" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><b aria-hidden="true">{active![2]}</b>{active![1]}<span aria-hidden="true" className="chev">▾</span></button></nav>
+      : <nav className="tabbar" aria-label="Navigation mobile">{items.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>)}
+    {admin && menuOpen && (
+      <Modal onClose={() => setMenuOpen(false)} ariaLabel="Sections de l'administration">
+        <h3 style={{ marginTop: 0 }}>Sections</h3>
+        <nav className="admin-menu-list" aria-label="Sections de l'administration">
+          {ADMIN_NAV.map(([p, l, i]) => <a key={p} href={`#${p}`} className={active![0] === p ? 'on' : ''} aria-current={active![0] === p ? 'page' : undefined} onClick={() => setMenuOpen(false)}><b aria-hidden="true">{i}</b>{l}</a>)}
+        </nav>
+      </Modal>
+    )}
   </>);
 }
 
