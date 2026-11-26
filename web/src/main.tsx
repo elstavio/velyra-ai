@@ -1,4 +1,4 @@
-import { StrictMode, useCallback, useEffect, useState } from 'react';
+import { Fragment, StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { api, tokens } from './api';
 import { Forgot, Landing, Legal, Login, Register } from './public';
@@ -6,7 +6,7 @@ import { ComplianceCenter, TransparencyBanner } from './compliance';
 import { Account as _A } from './app2';
 import { Agents, Chat, Dashboard, Documents, Memory, type Me } from './app1';
 import { Account, Developer, Marketplace, PaymentReturn, Pricing, TikTok, Workflows } from './app2';
-import { AdminConsole, AdminLogin, TABS } from './admin';
+import { ADMIN_GROUPS, AdminConsole, AdminLogin, TABS } from './admin';
 import { Social } from './social';
 import { ErrorBoundary, Loading, Modal, go, useHash } from './ui';
 
@@ -16,7 +16,13 @@ void _A;
 // M2 (Phase 4) : glyphes de la barre mobile (.tabbar) pour les 15 sections admin, construits à partir
 // de admin.tsx::TABS (source unique des libellés/clés) — aucun doublon, aucune icône SVG (hors scope M2/M4).
 const ADMIN_ICON: Record<string, string> = { '': '▦', utilisateurs: '☺', paiements: '€', portefeuille: '◆', fraude: '⚠', securite: '⌘', controles: '✓', agents: '✎', finances: '▤', jetons: '●', reseaux: '◎', ia: '✺', marketplace: '❖', offres: '☰', systeme: '⚙' };
-const ADMIN_NAV: [string, string, string][] = TABS.map(([k, l]) => [`/admin${k ? '/' + k : ''}`, l, ADMIN_ICON[k] ?? '•']);
+// M3 : table clé -> [href, libellé, icône], pour que le menu mobile groupé (Modal ci-dessous) retrouve
+// chaque entrée par clé dans l'ordre des groupes (ADMIN_GROUPS, admin.tsx) SANS changer ADMIN_NAV ni son
+// ordre d'origine (celui de TABS) — activeAdminItem juste en dessous continue de parcourir ADMIN_NAV
+// strictement inchangé, donc sa résolution par préfixe le plus long (ex. /admin/securite/intrusion) n'est
+// pas affectée par le regroupement, qui ne touche que l'affichage.
+const ADMIN_NAV_BY_KEY: Record<string, [string, string, string]> = Object.fromEntries(TABS.map(([k, l]) => [k, [`/admin${k ? '/' + k : ''}`, l, ADMIN_ICON[k] ?? '•']]));
+const ADMIN_NAV: [string, string, string][] = TABS.map(([k]) => ADMIN_NAV_BY_KEY[k]);
 
 // M2-correction : trouve l'entrée ADMIN_NAV correspondant au chemin courant par préfixe le plus long
 // (pas une égalité stricte, car une section admin peut porter un sous-chemin, ex. "/admin/securite/intrusion"
@@ -61,8 +67,17 @@ function Shell({ path, children, onLogout, admin }: { path: string; children: Re
     {admin && menuOpen && (
       <Modal onClose={() => setMenuOpen(false)} ariaLabel="Sections de l'administration">
         <h3 style={{ marginTop: 0 }}>Sections</h3>
+        {/* M3 : même liste plate de 15 <a> qu'avant (mêmes hrefs/libellés/icônes), désormais parcourue par
+            groupe (ADMIN_GROUPS) avec un <p> de titre non interactif entre chaque groupe — aucun second
+            niveau de navigation, le Modal M1 et son comportement (piège de focus, restauration, Échap)
+            restent strictement inchangés : seul le contenu passé en children change. */}
         <nav className="admin-menu-list" aria-label="Sections de l'administration">
-          {ADMIN_NAV.map(([p, l, i]) => <a key={p} href={`#${p}`} className={active![0] === p ? 'on' : ''} aria-current={active![0] === p ? 'page' : undefined} onClick={() => setMenuOpen(false)}><b aria-hidden="true">{i}</b>{l}</a>)}
+          {ADMIN_GROUPS.map(([gl, keys]) => (
+            <Fragment key={gl}>
+              <p className="admin-menu-group">{gl}</p>
+              {keys.map((k) => { const [p, l, i] = ADMIN_NAV_BY_KEY[k]; return <a key={p} href={`#${p}`} className={active![0] === p ? 'on' : ''} aria-current={active![0] === p ? 'page' : undefined} onClick={() => setMenuOpen(false)}><b aria-hidden="true">{i}</b>{l}</a>; })}
+            </Fragment>
+          ))}
         </nav>
       </Modal>
     )}

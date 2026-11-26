@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { Fragment, useState, type CSSProperties } from 'react';
 import { api, download, tokens } from './api';
 import { Controls, Finance, SocialAdmin, TokensAdmin, UserSheet } from './admin2';
 import { Alert, Bars, CountUp, Err, Field, Loading, StatusChip, Table, fmtDate, fmtMoney, go, rovingTabsKeyDown, useAction, useAsync, useConfirm } from './ui';
@@ -48,6 +48,19 @@ export function AdminLogin({ onAuth }: { onAuth: () => void }) {
 // de l'espace admin à partir de cette même liste (source unique des 15 sections), sans dupliquer
 // les libellés. Voir Shell({ admin }) dans main.tsx.
 export const TABS: [string, string][] = [['', 'Vue d\'ensemble'], ['utilisateurs', 'Utilisateurs'], ['paiements', 'Paiements'], ['portefeuille', 'Portefeuille'], ['fraude', 'Fraude'], ['securite', 'Sécurité'], ['controles', 'Contrôles'], ['agents', 'Agents IA'],['finances', 'Finances'], ['jetons', 'Jetons'], ['reseaux', 'Réseaux'], ['ia', 'Analyses IA'], ['marketplace', 'Marketplace'], ['offres', 'Offres et prix'], ['systeme', 'Système']];
+// M3 : regroupement thématique des 15 sections ci-dessus, validé explicitement par l'administrateur après
+// l'audit M3 (5 groupes métier). Pure métadonnée de PRÉSENTATION : ne modifie ni les clés/routes
+// ("/admin/<clé>"), ni TABS, ni ADMIN_NAV/activeAdminItem (main.tsx, inchangés), ni le nombre de sections
+// (15, inchangé). Consommée par la nav desktop ci-dessous (.admin-top-tabs) et par le menu mobile
+// (Shell/Modal, main.tsx) pour afficher les 5 mêmes groupes aux deux endroits à partir d'une source unique.
+export const ADMIN_GROUPS: [string, string[]][] = [
+  ['Pilotage', ['', 'ia']],
+  ['Utilisateurs & sécurité', ['utilisateurs', 'fraude', 'securite']],
+  ['Finance & paiements', ['paiements', 'portefeuille', 'finances', 'jetons']],
+  ['Produit & écosystème', ['agents', 'reseaux', 'marketplace']],
+  ['Configuration', ['controles', 'offres', 'systeme']],
+];
+const TAB_LABEL: Record<string, string> = Object.fromEntries(TABS);
 export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => void }) {
   const me = useAsync(() => api('/api/admin/me', { admin: true }));
   // I3 : "tab" peut désormais porter un sous-chemin (ex. "securite/intrusion") pour le lien direct vers
@@ -60,7 +73,18 @@ export function AdminConsole({ tab, onLogout }: { tab: string; onLogout: () => v
       {/* M2-correction : classe admin-top-tabs ajoutée uniquement pour que styles.css puisse masquer cette
           nav sur mobile (<860px), où elle fait désormais doublon avec le bouton+menu unique de .tabbar
           (Shell, main.tsx) — structure, libellés, routes et comportement desktop strictement inchangés. */}
-      <nav className="tabs admin-top-tabs" aria-label="Sections">{TABS.map(([k, l]) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={section === k ? 'on' : ''} aria-current={section === k ? 'page' : undefined}>{l}</a>)}</nav>
+      {/* M3 : la nav passe de TABS.map(...) (plate) à ADMIN_GROUPS.map(...) (groupée) — mêmes 15 <a>,
+          mêmes hrefs, mêmes libellés ; seul l'ordre d'affichage suit désormais les 5 groupes, avec un
+          <span> de titre non interactif (jamais un <a>/<button>, donc ignoré par la tabulation clavier)
+          entre chaque groupe. */}
+      <nav className="tabs admin-top-tabs" aria-label="Sections">
+        {ADMIN_GROUPS.map(([gl, keys]) => (
+          <Fragment key={gl}>
+            <span className="admin-nav-group">{gl}</span>
+            {keys.map((k) => <a key={k} href={`#/admin${k ? '/' + k : ''}`} className={section === k ? 'on' : ''} aria-current={section === k ? 'page' : undefined}>{TAB_LABEL[k]}</a>)}
+          </Fragment>
+        ))}
+      </nav>
       {section === '' && <Overview />}{section === 'utilisateurs' && <Users />}{section === 'paiements' && <Payments />}{section === 'portefeuille' && <Wallet />}{section === 'fraude' && <Fraud />}
       {section === 'securite' && <Security tab={tab} />}{section === 'controles' && <Controls />}{section === 'finances' && <Finance />}{section === 'jetons' && <TokensAdmin />}{section === 'reseaux' && <SocialAdmin />}{section === 'agents' && <Agents />}{section === 'ia' && <Insights />}{section === 'marketplace' && <Moderation />}{section === 'offres' && <Plans />}{section === 'systeme' && <System />}
     </div>
