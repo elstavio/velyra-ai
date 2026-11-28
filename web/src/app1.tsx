@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { api, download } from './api';
 import { Alert, AreaTrend, Bars, CountUp, Donut, Err, Field, Loading, Ring, Table, fmtDate, fmtNum, go, useAction, useAsync } from './ui';
+// M4 : IconChat/IconTrend/IconDocs/IconArrow centralisées dans web/src/icons.tsx (bibliothèque SVG
+// commune à toute l'application) — précédemment définies localement ici, seules icônes SVG déjà présentes
+// avant M4 et prises comme référence de style pour l'ensemble du système d'icônes. IconArrow est désormais
+// alignée sur la convention commune (strokeWidth 1.6 au lieu de 1.8 ; taille pilotée par CSS, voir
+// styles.css ".action-card .go svg", au lieu des attributs width/height={15} posés ici en JSX) — seule
+// incohérence relevée par l'audit M4, maintenant corrigée.
+import { IconArrow, IconChat, IconDocs, IconTrend } from './icons';
 
 export interface Me { user: any; entitlements: any; region: string | null; currency: string | null; todo: string[] }
 
 const KIND_LABEL: Record<string, string> = { chat: 'Conversations IA', workflow_step: 'Étapes de workflow', tiktok_analysis: 'Analyses TikTok' };
 const label = (k: string) => KIND_LABEL[k] ?? k;
-
-function IconChat() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 5.5a1.5 1.5 0 0 1 1.5-1.5h11A1.5 1.5 0 0 1 17 5.5v6a1.5 1.5 0 0 1-1.5 1.5H9l-3.5 3v-3H4.5A1.5 1.5 0 0 1 3 11.5v-6Z" strokeLinejoin="round" /></svg>; }
-function IconTrend() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 15.5 8 9l3.2 3.2L17 5" strokeLinecap="round" strokeLinejoin="round" /><path d="M12.5 5H17v4.5" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
-function IconDocs() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 2.5h5.5L15 6v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z" strokeLinejoin="round" /><path d="M11.5 2.5V6H15" strokeLinejoin="round" /><path d="M7.5 10.5h5M7.5 13h5" strokeLinecap="round" /></svg>; }
-function IconArrow() { return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" width={15} height={15}><path d="M5 15 15 5M8 5h7v7" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 
 /* ------------------------------------------------------------------ Tableau de bord + démarrage */
 export function Dashboard({ me, cfg, reload }: { me: Me; cfg: any; reload: () => void }) {

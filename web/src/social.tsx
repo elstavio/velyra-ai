@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import { Alert, Err, Field, Loading, Modal, fmtDate, fmtNum, go, useAction, useAsync } from './ui';
 import type { Me } from './app1';
+// M4 : logos de marque fidèles et reconnaissables (bibliothèque SVG centralisée icons.tsx), en remplacement
+// des glyphes Unicode précédents (♪ ▶ f ◎ ✆) — voir le rapport d'audit M4 et icons.tsx pour le détail de
+// chaque logo (badge auto-contrasté à couleurs officielles, lisible en thème clair comme sombre).
+import { LogoFacebook, LogoInstagram, LogoTikTok, LogoWhatsApp, LogoYouTube, type IconCmp } from './icons';
 
-const ICON: Record<string, string> = { tiktok: '♪', youtube: '▶', facebook: 'f', instagram: '◎', whatsapp: '✆' };
+const ICON: Record<string, IconCmp> = { tiktok: LogoTikTok, youtube: LogoYouTube, facebook: LogoFacebook, instagram: LogoInstagram, whatsapp: LogoWhatsApp };
 const KIND_LABEL: Record<string, string> = { plan: 'Plan de contenu sur 7 jours', ideas: '10 idées de contenu', script: 'Script vidéo court', caption: 'Légendes et hashtags', offer: 'Message de vente', analysis: 'Analyse de mes résultats' };
 const ERR: Record<string, string> = { etat_invalide: 'La connexion a expiré ou a déjà été utilisée. Recommencez.', refuse: 'Vous avez refusé l\'autorisation : rien n\'a été connecté.', offre: 'Votre offre Social n\'est plus active.', compte: 'Compte indisponible.', plateforme: 'Plateforme inconnue.', echec: 'La plateforme a refusé la connexion.' };
 
@@ -31,8 +35,9 @@ export function Social({ me, reload }: { me: Me; reload: () => void }) {
         <a className="btn primary" href="#/offres">Voir l'offre Social</a></div>}
       <div className="grid">{((pl.data as any)?.platforms ?? []).map((p: any) => {
         const mine = accounts.filter((x) => x.platform === p.platform);
+        const Logo = ICON[p.platform];
         return (<div className="card" key={p.platform}>
-          <h3><span aria-hidden="true" style={{ marginRight: 8 }}>{ICON[p.platform]}</span>{p.label}</h3>
+          <h3><span aria-hidden="true" className="social-logo">{Logo && <Logo />}</span>{p.label}</h3>
           {mine.length > 0 && <p className="tiny">{mine.length} compte(s) connecté(s)</p>}
           {p.manual ? (<>
             <p className="muted tiny">Se connecte avec l'identifiant du numéro et un jeton d'utilisateur système créés dans Meta Business (documentation WhatsApp Cloud API).</p>

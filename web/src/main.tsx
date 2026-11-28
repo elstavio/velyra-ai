@@ -9,27 +9,38 @@ import { Account, Developer, Marketplace, PaymentReturn, Pricing, TikTok, Workfl
 import { ADMIN_GROUPS, AdminConsole, AdminLogin, TABS } from './admin';
 import { Social } from './social';
 import { ErrorBoundary, Loading, Modal, go, useHash } from './ui';
+// M4 : bibliothèque SVG centralisée (web/src/icons.tsx) — remplace les glyphes Unicode ci-dessous (NAV,
+// ADMIN_ICON, chevron) par des composants React. Voir icons.tsx pour la convention commune (20×20,
+// currentColor, etc.) et le rapport d'audit M4 pour la correspondance ancienne icône -> nouvelle icône.
+import {
+  IconAccount, IconAgents, IconAgentsAI, IconApi, IconChat, IconChevronDown, IconControls, IconDocs,
+  IconDot, IconFinances, IconFraud, IconHome, IconInsights, IconMarketplace, IconMemory, IconNetwork,
+  IconOffers, IconOverview, IconPayments, IconSecurity, IconSystem, IconTokens, IconUsers, IconWallet,
+  IconWorkflow, LogoTikTok, type IconCmp,
+} from './icons';
 
-const NAV: [string, string, string][] = [['/app', 'Accueil', '⌂'], ['/app/chat', 'Discuter', '✎'], ['/app/memoire', 'Mémoire', '◉'], ['/app/documents', 'Documents', '▤'], ['/app/agents', 'Agents', '☺'], ['/app/workflows', 'Workflows', '⇉'], ['/app/marketplace', 'Marketplace', '❖'], ['/app/reseaux', 'Réseaux', '◎'], ['/app/tiktok', 'TikTok', '♪'], ['/offres', 'Offres', '€'], ['/app/api', 'API', '⌘'], ['/app/compte', 'Compte', '☰']];
+const NAV: [string, string, IconCmp][] = [['/app', 'Accueil', IconHome], ['/app/chat', 'Discuter', IconChat], ['/app/memoire', 'Mémoire', IconMemory], ['/app/documents', 'Documents', IconDocs], ['/app/agents', 'Agents', IconAgents], ['/app/workflows', 'Workflows', IconWorkflow], ['/app/marketplace', 'Marketplace', IconMarketplace], ['/app/reseaux', 'Réseaux', IconNetwork], ['/app/tiktok', 'TikTok', LogoTikTok], ['/offres', 'Offres', IconOffers], ['/app/api', 'API', IconApi], ['/app/compte', 'Compte', IconAccount]];
 void _A;
 
-// M2 (Phase 4) : glyphes de la barre mobile (.tabbar) pour les 15 sections admin, construits à partir
-// de admin.tsx::TABS (source unique des libellés/clés) — aucun doublon, aucune icône SVG (hors scope M2/M4).
-const ADMIN_ICON: Record<string, string> = { '': '▦', utilisateurs: '☺', paiements: '€', portefeuille: '◆', fraude: '⚠', securite: '⌘', controles: '✓', agents: '✎', finances: '▤', jetons: '●', reseaux: '◎', ia: '✺', marketplace: '❖', offres: '☰', systeme: '⚙' };
+// M2 (Phase 4) : icônes de la barre mobile (.tabbar) pour les 15 sections admin, construites à partir
+// de admin.tsx::TABS (source unique des libellés/clés) — aucun doublon.
+// M4 : glyphes Unicode remplacés par les composants SVG centralisés d'icons.tsx (voir rapport d'audit M4
+// pour la correspondance ancienne icône -> nouvelle icône).
+const ADMIN_ICON: Record<string, IconCmp> = { '': IconOverview, utilisateurs: IconUsers, paiements: IconPayments, portefeuille: IconWallet, fraude: IconFraud, securite: IconSecurity, controles: IconControls, agents: IconAgentsAI, finances: IconFinances, jetons: IconTokens, reseaux: IconNetwork, ia: IconInsights, marketplace: IconMarketplace, offres: IconOffers, systeme: IconSystem };
 // M3 : table clé -> [href, libellé, icône], pour que le menu mobile groupé (Modal ci-dessous) retrouve
 // chaque entrée par clé dans l'ordre des groupes (ADMIN_GROUPS, admin.tsx) SANS changer ADMIN_NAV ni son
 // ordre d'origine (celui de TABS) — activeAdminItem juste en dessous continue de parcourir ADMIN_NAV
 // strictement inchangé, donc sa résolution par préfixe le plus long (ex. /admin/securite/intrusion) n'est
 // pas affectée par le regroupement, qui ne touche que l'affichage.
-const ADMIN_NAV_BY_KEY: Record<string, [string, string, string]> = Object.fromEntries(TABS.map(([k, l]) => [k, [`/admin${k ? '/' + k : ''}`, l, ADMIN_ICON[k] ?? '•']]));
-const ADMIN_NAV: [string, string, string][] = TABS.map(([k]) => ADMIN_NAV_BY_KEY[k]);
+const ADMIN_NAV_BY_KEY: Record<string, [string, string, IconCmp]> = Object.fromEntries(TABS.map(([k, l]) => [k, [`/admin${k ? '/' + k : ''}`, l, ADMIN_ICON[k] ?? IconDot]]));
+const ADMIN_NAV: [string, string, IconCmp][] = TABS.map(([k]) => ADMIN_NAV_BY_KEY[k]);
 
 // M2-correction : trouve l'entrée ADMIN_NAV correspondant au chemin courant par préfixe le plus long
 // (pas une égalité stricte, car une section admin peut porter un sous-chemin, ex. "/admin/securite/intrusion"
 // doit rattacher "Sécurité", pas rater la correspondance). Sert au libellé du bouton déclencheur mobile et
 // au marquage de l'élément actif dans le menu — voir Shell ci-dessous.
-function activeAdminItem(path: string): [string, string, string] {
-  let best: [string, string, string] | null = null;
+function activeAdminItem(path: string): [string, string, IconCmp] {
+  let best: [string, string, IconCmp] | null = null;
   for (const it of ADMIN_NAV) { if (path === it[0] || path.startsWith(it[0] + '/')) { if (!best || it[0].length > best[0].length) best = it; } }
   return best ?? ADMIN_NAV[0];
 }
@@ -62,8 +73,8 @@ function Shell({ path, children, onLogout, admin }: { path: string; children: Re
     <main className="page" id="contenu">{!admin && <TransparencyBanner />}{children}</main>
     <footer className="wrap tiny" style={{ paddingBottom: onLogout ? 90 : 24 }}><a href="#/confidentialite">Confidentialité</a> · <a href="#/conditions">Conditions d'utilisation</a> · <a href="#/conformite">Centre de conformité</a></footer>
     {onLogout && (admin
-      ? <nav className="tabbar" aria-label="Navigation mobile"><button type="button" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><b aria-hidden="true">{active![2]}</b>{active![1]}<span aria-hidden="true" className="chev">▾</span></button></nav>
-      : <nav className="tabbar" aria-label="Navigation mobile">{items.map(([p, l, i]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true">{i}</b>{l}</a>)}</nav>)}
+      ? (() => { const ActiveIcon = active![2]; return <nav className="tabbar" aria-label="Navigation mobile"><button type="button" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><b aria-hidden="true"><ActiveIcon /></b>{active![1]}<span aria-hidden="true" className="chev"><IconChevronDown /></span></button></nav>; })()
+      : <nav className="tabbar" aria-label="Navigation mobile">{items.map(([p, l, Icon]) => <a key={p} href={`#${p}`} className={path === p ? 'on' : ''} aria-current={path === p ? 'page' : undefined}><b aria-hidden="true"><Icon /></b>{l}</a>)}</nav>)}
     {admin && menuOpen && (
       <Modal onClose={() => setMenuOpen(false)} ariaLabel="Sections de l'administration">
         <h3 style={{ marginTop: 0 }}>Sections</h3>
@@ -75,7 +86,7 @@ function Shell({ path, children, onLogout, admin }: { path: string; children: Re
           {ADMIN_GROUPS.map(([gl, keys]) => (
             <Fragment key={gl}>
               <p className="admin-menu-group">{gl}</p>
-              {keys.map((k) => { const [p, l, i] = ADMIN_NAV_BY_KEY[k]; return <a key={p} href={`#${p}`} className={active![0] === p ? 'on' : ''} aria-current={active![0] === p ? 'page' : undefined} onClick={() => setMenuOpen(false)}><b aria-hidden="true">{i}</b>{l}</a>; })}
+              {keys.map((k) => { const [p, l, Icon] = ADMIN_NAV_BY_KEY[k]; return <a key={p} href={`#${p}`} className={active![0] === p ? 'on' : ''} aria-current={active![0] === p ? 'page' : undefined} onClick={() => setMenuOpen(false)}><b aria-hidden="true"><Icon /></b>{l}</a>; })}
             </Fragment>
           ))}
         </nav>

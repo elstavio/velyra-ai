@@ -96,12 +96,23 @@ table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:t
 .top .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.28)} .top .btn:hover{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.06)}
 .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);overflow-x:auto}
 .tabbar a,.tabbar button{flex:1 0 64px;text-align:center;padding:8px 4px;font-size:.72rem;font-weight:650;text-decoration:none;color:var(--ink-2)} .tabbar a.on{color:var(--gold)}
-.tabbar a b,.tabbar button b{display:block;font-size:1.2rem;line-height:1.2;font-weight:600}
+/* M4 : le glyphe Unicode (ex. ▦) qu'un <b> centrait auparavant via font-size/line-height est remplacé par
+   une icône SVG (web/src/icons.tsx) ; .tabbar a b / .tabbar button b devient un conteneur flex qui centre
+   l'icône — même empilement visuel « icône au-dessus du libellé » qu'avant (hérité du display:block d'un
+   <b>, ici d'un flex en colonne implicite par le flux normal du bloc parent) et même centrage horizontal
+   (hérité de text-align:center sur .tabbar a/.tabbar button, inchangé ci-dessus). Taille de l'icône (20px)
+   pilotée ici, pas par le composant React, comme pour toutes les icônes fonctionnelles du système M4. */
+.tabbar a b,.tabbar button b{display:flex;align-items:center;justify-content:center;line-height:1;margin-bottom:2px}
+.tabbar a b svg,.tabbar button b svg{width:20px;height:20px}
 /* M2-correction : bouton déclencheur du menu mobile admin (Shell, main.tsx) — réutilise exactement le
    style des éléments .tabbar ci-dessus (règles combinées avec ,.tabbar button juste au-dessus), avec
    seulement une réinitialisation des styles natifs du <button> (fond/bordure/police). */
 .tabbar button{background:none;border:none;font:inherit;cursor:pointer;width:100%}
-.tabbar button .chev{margin-left:3px;color:var(--ink-3)}
+/* M4 : chevron (▾) remplacé par IconChevronDown (icons.tsx) ; même position (léger décalage à droite du
+   libellé) et même couleur discrète (--ink-3) qu'avant, taille réduite car un chevron reste un indicateur
+   secondaire, jamais aussi proéminent que l'icône de section au-dessus du libellé. */
+.tabbar button .chev{margin-left:3px;color:var(--ink-3);display:inline-flex;vertical-align:-2px}
+.tabbar button .chev svg{width:13px;height:13px}
 main.page{padding:22px 0 96px}
 @media(min-width:860px){.top nav{display:flex}.tabbar{display:none}main.page{padding-bottom:48px}}
 /* éléments de page */
@@ -133,7 +144,11 @@ main.page{padding:22px 0 96px}
 .admin-menu-list a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);text-decoration:none;color:var(--ink-2);font-weight:600}
 .admin-menu-list a:hover{background:var(--surface-2)}
 .admin-menu-list a.on{color:var(--ink);background:var(--surface-2)}
-.admin-menu-list a b{width:20px;text-align:center;font-size:1.05rem}
+/* M4 : glyphe Unicode remplacé par une icône SVG (icons.tsx) ; même emplacement de 20px de large que le
+   glyphe qu'il remplace (conservé pour ne pas perturber l'alignement en ligne avec le libellé, assuré par
+   le display:flex de .admin-menu-list a ci-dessus), recentré ici en flex au lieu de text-align. */
+.admin-menu-list a b{width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.admin-menu-list a b svg{width:17px;height:17px}
 /* M3 : titres de groupe non interactifs (jamais un <a>/<button>, donc ignorés par Tab) regroupant les 15
    sections en 5 thèmes métier, desktop (.admin-top-tabs, flex-wrap) et mobile (.admin-menu-list, colonne).
    Même échelle que .tabbar (.72rem) et même ton que .muted/.tiny (--ink-3) : aucune nouvelle couleur, aucun
@@ -142,6 +157,11 @@ main.page{padding:22px 0 96px}
 .admin-nav-group:first-child{margin-top:0}
 .admin-menu-group{margin:14px 0 2px;padding:0 12px;font-size:.72rem;font-weight:650;letter-spacing:.02em;color:var(--ink-3)}
 .admin-menu-group:first-child{margin-top:2px}
+/* M4 : logo de plateforme sociale (web/src/social.tsx — LogoFacebook/LogoInstagram/LogoTikTok/LogoWhatsApp/
+   LogoYouTube, icons.tsx) affiché devant le nom de la plateforme dans l'en-tête de chaque carte ; remplace
+   le glyphe Unicode précédent (même espacement marginRight:8 px qu'avant, repris ici en CSS). */
+.social-logo{display:inline-flex;align-items:center;vertical-align:-5px;margin-right:8px}
+.social-logo svg{width:20px;height:20px}
 .method{display:flex;gap:10px;align-items:center;padding:13px;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;margin-bottom:8px} .method.sel{border-color:var(--gold-bright);box-shadow:0 0 0 1px var(--gold-bright)} .method.off{opacity:.5;cursor:not-allowed}
 code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem} pre{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;overflow:auto}
 .sr{position:absolute;left:-9999px}
@@ -164,6 +184,10 @@ code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85re
 .action-card:hover .glyph{background:var(--navy);color:var(--gold-bright);transform:scale(1.08) rotate(-4deg)}
 .action-card:active{transform:translateY(-1px) scale(.985)}
 .action-card .go{position:absolute;right:16px;bottom:16px;opacity:0;transform:translate(-6px,6px);transition:opacity .16s ease,transform .16s cubic-bezier(.34,1.56,.64,1);color:var(--gold)}
+/* M4 : IconArrow (icons.tsx) n'a plus de width/height posés en JSX (seule icône qui dérogeait à la
+   convention commune avant M4) — sa taille d'affichage (15×15, inchangée) est désormais pilotée ici,
+   exactement comme .action-card .glyph svg le fait déjà pour IconChat/IconTrend/IconDocs ci-dessus. */
+.action-card .go svg{width:15px;height:15px}
 .action-card:hover .go{opacity:1;transform:translate(0,0)}
 
 /* ancrage pour l'apparition échelonnée des cartes au chargement (pas au scroll, pas en boucle) */
